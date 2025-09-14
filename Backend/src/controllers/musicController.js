@@ -11,7 +11,7 @@ async function handleSongSearch(req, res, songNameParam) {
   exec(command, (error, stdout, stderr) => {
     if (error || !stdout) {
       console.error("yt-dlp error:", error || stderr);
-      return res.status(500).json({ error: "Error extracting media" });
+      return res.status(500).json({ error: "Error extracting media" } , error);
     }
 
     const lines = stdout.trim().split("\n");
