@@ -26,6 +26,11 @@ router.get("/me", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+router.get("/check",(req,res)=>{
+  res.json({
+    message: "working"
+  })
+})
 
 
 module.exports = router;
