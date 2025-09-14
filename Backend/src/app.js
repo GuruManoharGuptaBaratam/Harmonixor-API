@@ -15,6 +15,11 @@ app.use("/harmonixor/songs", devApiRoutes);
 app.use("/harmonixor/users", userRoutes);
 app.use("/harmonixor/users",user)
 
+app.get("/", (req, res) => {
+  res.send("API is running!");
+});
 // Example: GET /harmonixor/users/me
+
+const path = require("path");
 
 module.exports = app;
