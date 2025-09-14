@@ -1,0 +1,144 @@
+
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120px 20px 60px; 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #000;
+}
+
+
+.home-hero {
+  text-align: center;
+  padding: 50px 40px;
+  margin-bottom: 60px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  width: 60%;
+}
+
+.home-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.home-subtitle {
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin-bottom: 30px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+
+.home-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap; 
+}
+
+.home-btn {
+  text-decoration: none;
+  padding: 12px 28px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.home-btn.primary {
+  background: rgba(255, 255, 255, 0.85);
+  color: #000;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.home-btn.primary:hover {
+  background: #000;
+  color: #fff;
+}
+
+.home-btn.secondary {
+  background: transparent;
+  border: 2px solid rgba(0, 0, 0, 0.6);
+  color: #000;
+}
+
+.home-btn.secondary:hover {
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+}
+
+
+.home-features {
+  max-width: 1100px;
+  width: 100%;
+  margin: 40px auto 80px;
+  text-align: center;
+  padding: 0 20px; 
+}
+
+.home-features h2 {
+  font-size: 2rem;
+  margin-bottom: 40px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 30px;
+}
+
+.feature-card {
+  padding: 30px 20px;
+  border-radius: 25px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color: #000;
+}
+
+.feature-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+}
+
+
+.capsule {
+  border-radius: 30px;
+}
+
+
+@media (max-width: 992px) {
+  .home-hero {
+    width: 80%;
+    padding: 40px 30px;
+  }
+
+  .home-title {
+    font-size: 2.2rem;
+  }
+
+  .home-subtitle {
+    font-size: 1rem;
+  }
+}
+

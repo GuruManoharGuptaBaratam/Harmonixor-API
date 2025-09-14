@@ -1,0 +1,72 @@
+
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #000;
+  background: transparent;
+  overflow: hidden;
+}
+
+
+.profile-box {
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 35px;
+  padding: 40px 30px;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  box-shadow: inset 0 0 20px rgba(255,255,255,0.3), 0 6px 22px rgba(0,0,0,0.12);
+}
+
+
+.profile-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+
+.profile-json {
+  background: rgba(255,255,255,0.12);
+  padding: 15px 20px;
+  border-radius: 20px;
+  text-align: left;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  color: #1e90ff; 
+  box-shadow: inset 0 2px 6px rgba(255,255,255,0.2);
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+
+.profile-actions {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 28px;
+  border: none;
+  background: rgba(255,255,255,0.9);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-btn:hover {
+  background: #000;
+  color: #fff;
+}

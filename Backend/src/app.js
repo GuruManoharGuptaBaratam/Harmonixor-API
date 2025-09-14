@@ -1,0 +1,20 @@
+const express = require("express");
+const cors = require("cors");
+const devApiRoutes = require("./routes/songs");
+const user = require("./routes/user");
+const userRoutes = require("./routes/userRoutes")
+
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// Mount routes
+app.use("/harmonixor/songs", devApiRoutes);
+app.use("/harmonixor/users", userRoutes);
+app.use("/harmonixor/users",user)
+
+// Example: GET /harmonixor/users/me
+
+module.exports = app;
