@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const devApiRoutes = require("./routes/songs");
+const sequelize = require('./models/db');
 const user = require("./routes/user");
 const userRoutes = require("./routes/userRoutes")
 
@@ -21,6 +22,14 @@ app.get("/check",(req,res)=>{
 })
 // Example: GET /harmonixor/users/me
 
+
+sequelize.sync({ alter: true })  // or { force: true } if you want to drop & recreate
+  .then(() => {
+    console.log('✅ Database & tables synced successfully');
+  })
+  .catch(err => {
+    console.error('❌ Error syncing database:', err);
+  });
 const path = require("path");
 
 module.exports = app;

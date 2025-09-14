@@ -7,6 +7,7 @@ const cors = require("cors");
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // user routes
 
@@ -17,7 +18,6 @@ app.get("/", (req, res) => {
   res.send("API is running!");
 });
 app.post("postCheck",(req,res)=>{
-  const {message} = req.body
   res.json({content: message})
 })
 app.listen(PORT, () => {
