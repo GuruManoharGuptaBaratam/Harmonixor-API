@@ -6,12 +6,13 @@ async function handleSongSearch(req, res, songNameParam) {
     return res.status(400).json({ error: "Invalid song name" });
   }
 
-  const command = `yt-dlp -f "bestaudio[ext=m4a]/bestaudio" --default-search "ytsearch" --get-title --get-thumbnail --get-url --sponsorblock-remove all "${songName} lyrical"`;
+ const command = `yt-dlp --cookies cookies.txt -f "bestaudio[ext=m4a]/bestaudio" --default-search "ytsearch" --get-title --get-thumbnail --get-url --sponsorblock-remove all "${songName} lyrical"`;
+
 
   exec(command, (error, stdout, stderr) => {
     if (error || !stdout) {
       console.error("yt-dlp error:", error || stderr);
-      return res.status(500).json({ error: "Error extracting media" } , error);
+      return res.status(500).json({ error: "Error extracting media" ,error} );
     }
 
     const lines = stdout.trim().split("\n");
