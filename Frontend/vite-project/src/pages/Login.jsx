@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./Login.css";
 
+
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -12,11 +13,14 @@ const Login = ({ onLogin }) => {
     setError(""); 
 
     try {
-      const response = await axios.post("harmonixor/users/login", { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/harmonixor/users/login`, {
+        email,
+        password,
+      });
 
       if (response.data.success) {
         console.log("✅ Login successful:", response.data);
-
+        
         // Optional: store token locally
         localStorage.setItem("token", response.data.token);
 

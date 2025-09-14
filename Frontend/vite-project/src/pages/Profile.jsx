@@ -21,7 +21,7 @@ const Profile = () => {
           return;
         }
 
-        const response = await axios.get("http://localhost:3003/harmonixor/users/me", {
+        const response = await axios.get("/harmonixor/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
