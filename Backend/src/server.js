@@ -13,6 +13,11 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/checkBackend",(req,res)=>{
   res.json({message: "Backend Server is Running !!!"})
 })
+app.use(cors({
+  origin: 'https://harmonixor-api-pcfs.vercel.app', // your Vercel frontend
+  credentials: true
+}));
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });

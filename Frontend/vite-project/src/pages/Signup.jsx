@@ -14,7 +14,7 @@ const Signup = ({ onSignup }) => {
     setSuccess("");
 
     try {
-      const response = await axios.post("/harmonixor/users/signup", {
+      const response = await axios.post("https://harmonixor-api-1.onrender.com/harmonixor/users/signup", {
         email,
         password,
       });

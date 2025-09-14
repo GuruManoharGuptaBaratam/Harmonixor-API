@@ -13,7 +13,7 @@ const Login = ({ onLogin }) => {
     setError(""); 
 
     try {
-      const response = await axios.post("/harmonixor/users/login", {
+      const response = await axios.post("https://harmonixor-api-1.onrender.com/harmonixor/users/login", {
         email,
         password,
       });
