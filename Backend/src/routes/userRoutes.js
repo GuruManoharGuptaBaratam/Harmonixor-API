@@ -30,7 +30,7 @@ router.get("/check",(req,res)=>{
   res.json({
     message: "working"
   })
-})
+}) 
 
 
 module.exports = router;
