@@ -18,7 +18,7 @@ function Dashboard() {
       setApiKey("");
       setCopied(false);
 
-      const response = await axios.post("/harmonixor/songs/generate-key", { email });
+      const response = await axios.post("/harmonixor/users/generate-key", { email });
       setApiKey(response.data.apiKey);
     } catch (err) {
       if (err.response?.status === 404) {
