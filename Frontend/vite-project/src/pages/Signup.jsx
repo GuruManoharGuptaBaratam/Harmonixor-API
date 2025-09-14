@@ -14,7 +14,7 @@ const Signup = ({ onSignup }) => {
     setSuccess("");
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/harmonixor/users/signup`, {
+      const response = await axios.post("https://harmonixor-api.onrender.com/harmonixor/users/signup", {
         email,
         password,
       });

@@ -13,7 +13,7 @@ const Login = ({ onLogin }) => {
     setError(""); 
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/harmonixor/users/login`, {
+      const response = await axios.post("https://harmonixor-api.onrender.com/harmonixor/users/login", {
         email,
         password,
       });
