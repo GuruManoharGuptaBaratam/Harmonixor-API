@@ -13,7 +13,7 @@ const Login = ({ onLogin }) => {
     setError(""); 
 
     try {
-      const response = await axios.post("https://harmonixor-api.onrender.com/harmonixor/users/login", {
+      const response = await axios.post("/harmonixor/users/login", {
         email,
         password,
       });
@@ -23,7 +23,7 @@ const Login = ({ onLogin }) => {
         
         // Optional: store token locally
         localStorage.setItem("token", response.data.token);
-
+          localStorage.setItem("apiKey", response.data.apiKey);
         if (onLogin) onLogin({ email });
 
         // Redirect to dashboard
