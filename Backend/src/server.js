@@ -16,7 +16,7 @@ app.get("/render",(req,res)=>{
 app.get("/", (req, res) => {
   res.send("API is running!");
 });
-app.post("post check",(req,res)=>{
+app.post("postCheck",(req,res)=>{
   const {message} = req.body
   res.json({content: message})
 })
