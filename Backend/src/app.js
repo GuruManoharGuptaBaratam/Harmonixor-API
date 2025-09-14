@@ -17,10 +17,8 @@ app.use("/harmonixor/users", userRoutes);
 app.use("/harmonixor/users",user)
 
 
-app.get("/check",(req,res)=>{
-  res.send("Working check ")
-})
-// Example: GET /harmonixor/users/me
+
+
 
 
 sequelize.sync({ alter: true })  // or { force: true } if you want to drop & recreate

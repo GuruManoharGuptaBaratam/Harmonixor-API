@@ -10,15 +10,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // user routes
-
-app.get("/render",(req,res)=>{
-  res.json({message : "this is a dummy route"})
-})
-app.get("/", (req, res) => {
-  res.send("API is running!");
-});
-app.post("postCheck",(req,res)=>{
-  res.json({content: message})
+app.get("/checkBackend",(req,res)=>{
+  res.json({message: "Backend Server is Running !!!"})
 })
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
