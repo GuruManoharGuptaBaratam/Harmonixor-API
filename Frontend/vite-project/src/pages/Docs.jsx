@@ -62,17 +62,17 @@ const Docs = () => {
           <section id="examples">
             <h2>Examples</h2>
             <p>Search for a song:</p>
-            <pre className="code">{`curl -X GET "http://localhost:3003/harmonixor/songs/search?KEY=YOUR_API_KEY&Song_name=Shape of You"`}</pre>
+            <pre className="code">{`curl -X GET "https://harmonixor-api-1.onrender.com/harmonixor/songs/search?KEY=YOUR_API_KEY&Song_name=Shape of You"`}</pre>
 
             <p>Sample response:</p>
             <pre className="code">{`{
               "title": "Shape of You",
-              "thumbnail": "https://img.youtube.com/...",
-              "streamId": "abc123"
+              "thumbnail": "https://img.coverimage.com/...",
+              "streamId": "abc123{rawID}"
             }`}</pre>
 
             <p>Fetch the stream:</p>
-            <pre className="code">{`curl -X GET "http://localhost:3003/harmonixor/songs/stream?KEY=YOUR_API_KEY&Song_url=abc123"`}</pre>
+            <pre className="code">{`curl -X GET "https://harmonixor-api-1.onrender.com/songs/stream?KEY=YOUR_API_KEY&Song_url=abc123"`}</pre>
           </section>
 
           <section id="faq">
