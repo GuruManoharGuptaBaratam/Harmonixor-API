@@ -1,0 +1,56 @@
+.uploadcookie-box {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 35px;
+  padding: 30px 30px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: inset 0 0 20px rgba(255,255,255,0.3), 0 6px 22px rgba(0,0,0,0.12);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+
+.uploadcookie-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 30px;
+  color: rgba(0,0,0,0.9);
+}
+
+.uploadcookie-input {
+  display: block;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 25px;
+  border: 1px solid rgba(0,0,0,0.25);
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.uploadcookie-input:hover {
+  border-color: rgba(0,0,0,0.6);
+  background: rgba(255,255,255,0.25);
+}
+
+.uploadcookie-info {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: #1e90ff;
+}
+
+.uploadcookie-error {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #e74c3c;
+}
+
+.uploadcookie-status {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #000;
+}

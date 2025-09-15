@@ -5,7 +5,10 @@ const User = sequelize.define('User', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   email: { type: DataTypes.STRING, allowNull: false },
   apiKey: { type: DataTypes.STRING(10), allowNull: true },
-  password: { type: DataTypes.STRING, allowNull: true }
+  password: { type: DataTypes.STRING, allowNull: true },
+
+  // ✅ New column for cookie (base64 string)
+  cookieFile: { type: DataTypes.TEXT, allowNull: true }
 }, {
   tableName: 'users',
   timestamps: false,

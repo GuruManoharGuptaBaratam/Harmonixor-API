@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { FaCopy, FaBook } from "react-icons/fa";
+import UploadCookie from "../components/UploadCookie"; // ✅ import
+
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -11,6 +13,8 @@ function Dashboard() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
+  const [cookieUploaded, setCookieUploaded] = useState(false); // ✅ track cookie upload
+
   const handleGenerateKey = async () => {
     try {
       setLoading(true);
@@ -18,7 +22,10 @@ function Dashboard() {
       setApiKey("");
       setCopied(false);
 
-      const response = await axios.post("https://harmonixor-api-1.onrender.com/harmonixor/users/generate-key", { email });
+      const response = await axios.post(
+        "https://harmonixor-api-1.onrender.com/harmonixor/users/generate-key",
+        { email }
+      );
       setApiKey(response.data.apiKey);
     } catch (err) {
       if (err.response?.status === 404) {
@@ -43,8 +50,15 @@ function Dashboard() {
       <div className="dashboard-box capsule">
         <h1 className="dashboard-title">Get Your API Key</h1>
         <p className="dashboard-subtitle">
-          Enter your email to generate a new API key
+          Upload cookie.txt first, then generate your key
         </p>
+        <UploadCookie onUploadSuccess={setCookieUploaded} />
+        
+        {!cookieUploaded && (
+          <p className="dashboard-warning" style={{ color: "red", fontSize: "14px" }}>
+            Please upload your cookie.txt file first.
+          </p>
+        )}
 
         <div className="dashboard-form">
           <input
@@ -53,11 +67,12 @@ function Dashboard() {
             value={email}
             className="dashboard-input"
             onChange={(e) => setEmail(e.target.value)}
+            disabled={!cookieUploaded} // ✅ disable until cookie uploaded
           />
           <button
             className="dashboard-button"
             onClick={handleGenerateKey}
-            disabled={loading}
+            disabled={loading || !cookieUploaded} // ✅ disable until cookie uploaded
           >
             {loading ? "Generating..." : "Generate Key"}
           </button>
