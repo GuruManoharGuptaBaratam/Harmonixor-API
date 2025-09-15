@@ -14,6 +14,8 @@ async function apiKeyAuth(req, res, next) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
+  req.apiKey = apiKey
+  next()
 }
 
 module.exports = apiKeyAuth;

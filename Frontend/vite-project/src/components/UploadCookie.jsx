@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./UploadCookie.css"; // ✅ import styles
 
-function UploadCookie({ email, onUploadSuccess }) {
+function UploadCookie({ userEmail, onUploadSuccess }) {
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -33,22 +33,20 @@ function UploadCookie({ email, onUploadSuccess }) {
       setFileName(file.name);
 
       const base64 = await convertToBase64(file);
-
       const res = await axios.post(
         "https://harmonixor-api-1.onrender.com/harmonixor/users/upload-cookie",
-        {
-          email,
-          cookieBase64: base64,
-        }
-      );
+        { email: userEmail, cookieBase64: base64 },
+        { headers: { "Content-Type": "application/json" } } // 👈 important
+        );
 
-      if (res.data.uploaded) {
+        if (res.data.uploaded === true) {
         if (onUploadSuccess) onUploadSuccess(true);
-        console.log("file is uploaded");
-      } else {
-        setError("Upload failed.");
-        if (onUploadSuccess) onUploadSuccess(false);
-      }
+            console.log("✅ file is uploaded");
+            
+        } else {
+        setError(res.data.message || "Upload failed.");
+            if (onUploadSuccess) onUploadSuccess(false);
+        }
     } catch (err) {
       setError("Upload failed. Try again.");
       console.error(err);

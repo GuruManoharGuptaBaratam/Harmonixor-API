@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { FaCopy, FaBook } from "react-icons/fa";
@@ -14,6 +14,21 @@ function Dashboard() {
   const [copied, setCopied] = useState(false);
 
   const [cookieUploaded, setCookieUploaded] = useState(false); // ✅ track cookie upload
+  useEffect(() => {
+      async function fetchUser() {
+        try {
+          const res = await axios.get("https://harmonixor-api-1.onrender.com/harmonixor/users/me", {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
+          setEmail(res.data.email);
+        } catch (err) {
+          console.error("Fetch user error:", err);
+        }
+      }
+      fetchUser();
+    }, []);
 
   const handleGenerateKey = async () => {
     try {
@@ -21,6 +36,7 @@ function Dashboard() {
       setError("");
       setApiKey("");
       setCopied(false);
+      
 
       const response = await axios.post(
         "https://harmonixor-api-1.onrender.com/harmonixor/users/generate-key",
@@ -44,16 +60,19 @@ function Dashboard() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+  
 
   return (
+
     <div className="dashboard-container">
       <div className="dashboard-box capsule">
         <h1 className="dashboard-title">Get Your API Key</h1>
         <p className="dashboard-subtitle">
           Upload cookie.txt first, then generate your key
         </p>
-        <UploadCookie onUploadSuccess={setCookieUploaded} />
-        
+      
+        <UploadCookie userEmail = {email} onUploadSuccess={setCookieUploaded} />
+
         {!cookieUploaded && (
           <p className="dashboard-warning" style={{ color: "red", fontSize: "14px" }}>
             Please upload your cookie.txt file first.
