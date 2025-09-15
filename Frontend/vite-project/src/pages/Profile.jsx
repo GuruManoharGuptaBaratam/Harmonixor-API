@@ -21,9 +21,12 @@ const Profile = () => {
           return;
         }
 
-        const response = await axios.get("/harmonixor/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          "https://harmonixor-api-1.onrender.com/harmonixor/users/me",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         setUserInfo(response.data);
 
