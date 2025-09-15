@@ -87,7 +87,7 @@ const Docs = () => {
 
             <h3>Step 1 — Download the extension</h3>
             <p>
-              Install the <a href="https://chrome.google.com/webstore/detail/get-cookiestxt/extensionID" target="_blank" rel="noreferrer">Get cookies.txt</a> browser extension.
+              Install the <a href="https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank" rel="noreferrer">Get cookies.txt</a> browser extension.
             </p>
 
             <h3>Step 2 — Export your cookies</h3>
