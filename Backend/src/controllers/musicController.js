@@ -14,12 +14,22 @@ async function handleSongSearch(req, res, songNameParam) {
     if (!user) return res.status(403).json({ error: "Invalid API key" });
 
     // ✅ Check for cookie
+
     const cookieBase64 = user.cookieFile;
+    console.log(cookieBase64)
     if (!cookieBase64) return res.status(400).json({ error: "No cookie found for this user" });
 
     // ✅ Convert Base64 to temp cookie.txt
     const buffer = Buffer.from(cookieBase64, "base64");
-    const tempCookiePath = path.join(__dirname, "../../UserCookies", `temp_cookie_${Date.now()}.txt`);
+    const cookiesDir = path.join(__dirname, "../../UserCookies");
+
+    // ✅ Create the directory if it doesn't exist
+    if (!fs.existsSync(cookiesDir)) {
+      fs.mkdirSync(cookiesDir, { recursive: true });
+    }
+
+    const tempCookiePath = path.join(cookiesDir, `temp_cookie_${Date.now()}.txt`);
+
     await fs.promises.writeFile(tempCookiePath, buffer);
 
     // ✅ Extract song name
