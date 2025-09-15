@@ -2,7 +2,7 @@ import React, { useState,useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { FaCopy, FaBook } from "react-icons/fa";
-import UploadCookie from "../components/UploadCookie"; // ✅ import
+import UploadCookie from "../components/UploadCookie"; 
 
 import "./Dashboard.css";
 
@@ -13,7 +13,7 @@ function Dashboard() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const [cookieUploaded, setCookieUploaded] = useState(false); // ✅ track cookie upload
+  const [cookieUploaded, setCookieUploaded] = useState(false); 
   useEffect(() => {
       async function fetchUser() {
         try {
@@ -86,12 +86,12 @@ function Dashboard() {
             value={email}
             className="dashboard-input"
             onChange={(e) => setEmail(e.target.value)}
-            disabled={!cookieUploaded} // ✅ disable until cookie uploaded
+            disabled={!cookieUploaded} 
           />
           <button
             className="dashboard-button"
             onClick={handleGenerateKey}
-            disabled={loading || !cookieUploaded} // ✅ disable until cookie uploaded
+            disabled={loading || !cookieUploaded} 
           >
             {loading ? "Generating..." : "Generate Key"}
           </button>

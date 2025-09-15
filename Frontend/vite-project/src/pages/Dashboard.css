@@ -10,12 +10,12 @@
   overflow: hidden;
 }
 
-/* ✅ new: flex row layout for dashboard */
+
 .dashboard-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 40px; /* space between left & right */
+  gap: 40px; 
   width: 100%;
   max-width: 1000px;
 }

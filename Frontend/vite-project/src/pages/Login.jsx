@@ -19,14 +19,14 @@ const Login = ({ onLogin }) => {
       });
 
       if (response.data.success) {
-        console.log("✅ Login successful:", response.data);
+        console.log("Login successful:", response.data);
         
-        // Optional: store token locally
+
         localStorage.setItem("token", response.data.token);
           localStorage.setItem("apiKey", response.data.apiKey);
         if (onLogin) onLogin({ email });
 
-        // Redirect to dashboard
+
         window.location.href = "/dashboard";
       } else {
         setError(response.data.message || "Invalid credentials");
@@ -35,7 +35,6 @@ const Login = ({ onLogin }) => {
       console.error("❌ Login failed:", err);
       console.log(err)
 
-      // Axios HTTP error response (404/401/500)
       setError(err.response?.data?.message || "Something went wrong. Try again.");
     }
   };

@@ -6,24 +6,21 @@ const User = require("../models/User"); // Sequelize model
 async function handleSongSearch(req, res, songNameParam) {
   try {
     const APIKEY = req.apiKey
-    console.log(APIKEY)
     if (!APIKEY) return res.status(401).json({ error: "API key missing" });
 
-    // ✅ Verify user
+
     const user = await User.findOne({ where: { apiKey: APIKEY } });
     if (!user) return res.status(403).json({ error: "Invalid API key" });
 
-    // ✅ Check for cookie
 
     const cookieBase64 = user.cookieFile;
-    console.log(cookieBase64)
     if (!cookieBase64) return res.status(400).json({ error: "No cookie found for this user" });
 
-    // ✅ Convert Base64 to temp cookie.txt
+
     const buffer = Buffer.from(cookieBase64, "base64");
     const cookiesDir = path.join(__dirname, "../../UserCookies");
 
-    // ✅ Create the directory if it doesn't exist
+
     if (!fs.existsSync(cookiesDir)) {
       fs.mkdirSync(cookiesDir, { recursive: true });
     }
@@ -32,18 +29,17 @@ async function handleSongSearch(req, res, songNameParam) {
 
     await fs.promises.writeFile(tempCookiePath, buffer);
 
-    // ✅ Extract song name
     const songName = songNameParam || req.query.song || req.body.songName;
     if (!songName || typeof songName !== "string") {
       await fs.promises.unlink(tempCookiePath);
       return res.status(400).json({ error: "Invalid song name" });
     }
 
-    // ✅ yt-dlp command
+  
     const command = `yt-dlp --cookies "${tempCookiePath}" -f "bestaudio[ext=m4a]/bestaudio" --default-search "ytsearch" --get-title --get-thumbnail --get-url --sponsorblock-remove all "${songName} lyrical"`;
 
     exec(command, async (error, stdout, stderr) => {
-      // Clean up temp cookie regardless of success/failure
+
       try {
         await fs.promises.unlink(tempCookiePath);
       } catch (unlinkErr) {

@@ -42,7 +42,7 @@ router.post("/upload-cookie", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // save cookie base64
+
     user.cookieFile = cookieBase64;
     await user.save();
 
