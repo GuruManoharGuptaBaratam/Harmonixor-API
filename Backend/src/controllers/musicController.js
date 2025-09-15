@@ -5,7 +5,8 @@ const User = require("../models/User"); // Sequelize model
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
-    const APIKEY = req.apiKey;
+    const APIKEY = req.apiKey
+    console.log(APIKEY)
     if (!APIKEY) return res.status(401).json({ error: "API key missing" });
 
     // ✅ Verify user
