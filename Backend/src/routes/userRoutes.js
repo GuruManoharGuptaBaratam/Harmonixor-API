@@ -5,13 +5,13 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// Login route
+
 router.post("/login", login);
 router.post("/signup", signup);
 
 
 
-// GET user info
+
 router.get("/me", authenticateToken, async (req, res) => {
   try {
     const user = await User.findOne({ where: { id: req.user.id } });

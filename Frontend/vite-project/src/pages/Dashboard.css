@@ -171,12 +171,11 @@
 }
 
 
-/* 📱 Mobile screens */
 @media (max-width: 600px) {
   .dashboard-box {
-    max-width: 320px;   /* smaller box */
-    width: 85%;         /* leave some space on both sides */
-    padding: 25px 18px; /* lighter padding */
+    max-width: 320px;   
+    width: 85%;         
+    padding: 25px 18px; 
   }
 
   .dashboard-title {

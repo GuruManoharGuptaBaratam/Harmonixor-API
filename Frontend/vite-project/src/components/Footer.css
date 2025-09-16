@@ -12,32 +12,32 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px; /* smaller gap */
+  gap: 6px; 
 }
 
 .footer-logo {
-  font-size: 1rem; /* reduced */
+  font-size: 1rem;
   font-weight: 700;
   color: #000;
 }
 
 .footer-text {
-  font-size: 0.8rem; /* reduced */
+  font-size: 0.8rem; 
   color: rgba(0, 0, 0, 0.7);
 }
 
 .footer-links {
   display: flex;
-  flex-direction: row; /* always in same line */
-  gap: 15px; /* reduced spacing */
+  flex-direction: row; 
+  gap: 15px; 
   margin-top: 5px;
-  flex-wrap: wrap; /* so it won’t overflow */
+  flex-wrap: wrap; 
   justify-content: center;
 }
 
 .footer-links a {
   text-decoration: none;
-  font-size: 0.85rem; /* slightly smaller */
+  font-size: 0.85rem;
   color: #000;
   transition: color 0.2s ease;
 }
@@ -48,7 +48,7 @@
 
 @media (max-width: 600px) {
   .footer {
-    padding: 5px; /* tighter padding */
+    padding: 5px; 
   }
 
   .footer-container {
@@ -56,7 +56,7 @@
   }
 
   .footer-links {
-    gap: 10px; /* tighter spacing for mobile */
+    gap: 10px; 
     font-size: 0.8rem;
   }
 }

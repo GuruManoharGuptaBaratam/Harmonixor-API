@@ -34,7 +34,7 @@ function UploadCookie({ userEmail, onUploadSuccess }) {
 
       const base64 = await convertToBase64(file);
       const res = await axios.post(
-        "https://harmonixor-api-1.onrender.com/harmonixor/users/upload-cookie",
+        `${import.meta.env.VITE_API_URL}harmonixor/users/upload-cookie`,
         { email: userEmail, cookieBase64: base64 },
         { headers: { "Content-Type": "application/json" } } // 👈 important
         );

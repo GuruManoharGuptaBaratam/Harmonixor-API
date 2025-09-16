@@ -114,6 +114,51 @@
   border-radius: 30px;
 }
 
+/* ✅ Loading state animation for button */
+.login-button.loading {
+  position: relative;
+  color: #fff; /* text turns white */
+  overflow: hidden;
+}
+
+.login-button.loading::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  animation: buttonFill 1.5s linear infinite;
+  z-index: 0;
+}
+
+/* keep text visible above animation */
+.login-button.loading {
+  position: relative;
+  z-index: 1;
+}
+
+.login-button.loading span {
+  position: relative;
+  z-index: 2;
+}
+
+/* Keyframes for looping fill */
+@keyframes buttonFill {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 0;
+  }
+  100% {
+    left: 100%;
+  }
+}
+.progress-bar {
+  animation: fill 5s linear forwards; /* slower animation */
+}
 
 @media (max-width: 600px) {
   .login-box {

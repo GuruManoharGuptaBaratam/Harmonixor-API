@@ -12,6 +12,7 @@ const Profile = () => {
   const [toggleApiKeys, setToggle] = useState(false)
   const navigate = useNavigate();
 
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -22,7 +23,7 @@ const Profile = () => {
         }
 
         const response = await axios.get(
-          "https://harmonixor-api-1.onrender.com/harmonixor/users/me",
+          `${import.meta.env.VITE_API_URL}harmonixor/users/me`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -52,10 +53,15 @@ const Profile = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/login");
+    navigate("/signup");
   };
-
-  if (loading) return <p style={{ textAlign: "center" }}>Loading...</p>;
+  if (loading) {
+    return (
+      <div className="loading-overlay">
+        <div className="loading-box">Loading...</div>
+      </div>
+    );
+  }
   if (error) return <p style={{ textAlign: "center", color: "red" }}>{error}</p>;
 
   return (
@@ -79,9 +85,6 @@ const Profile = () => {
           </button>
           <button className="profile-btn" onClick={() => setToggle((prev) => !prev)}>
             <FaKey /> Your API Keys
-          </button>
-          <button className="profile-btn">
-            <FaLock /> Change Password
           </button>
         </div>
       </div>

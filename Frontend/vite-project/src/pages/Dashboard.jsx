@@ -7,6 +7,7 @@ import UploadCookie from "../components/UploadCookie";
 import "./Dashboard.css";
 
 function Dashboard() {
+  
   const [email, setEmail] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,10 +15,11 @@ function Dashboard() {
   const [copied, setCopied] = useState(false);
 
   const [cookieUploaded, setCookieUploaded] = useState(false); 
+  console.log(import.meta.env.VITE_API_URL)
   useEffect(() => {
       async function fetchUser() {
         try {
-          const res = await axios.get("https://harmonixor-api-1.onrender.com/harmonixor/users/me", {
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}harmonixor/users/me`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
@@ -39,7 +41,7 @@ function Dashboard() {
       
 
       const response = await axios.post(
-        "https://harmonixor-api-1.onrender.com/harmonixor/users/generate-key",
+        `${import.meta.env.VITE_API_URL}harmonixor/users/generate-key`,
         { email }
       );
       setApiKey(response.data.apiKey);
@@ -75,7 +77,7 @@ function Dashboard() {
 
         {!cookieUploaded && (
           <p className="dashboard-warning" style={{ color: "red", fontSize: "14px" }}>
-            Please upload your cookie.txt file first.
+            {"{Please upload your cookie.txt file first.}"}
           </p>
         )}
 
