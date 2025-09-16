@@ -127,29 +127,49 @@
   cursor: pointer;
 }
 
-@media (max-width: 768px) {
+
+@media (max-width: 775px) {
   .navbar {
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     top: 10px;
   }
 
   .app-name-capsule {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-align: center;
+    padding: 5px 10px; /* smaller capsule */
   }
 
   .navbar-links-capsule {
-    width: 100%;
+    width: auto; /* shrink to fit */
     display: flex;
     justify-content: center;
   }
 
   .navbar-links {
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* keep single row */
     justify-content: center;
-    padding: 8px 16px;
-    gap: 12px;
+    padding: 4px 10px; /* smaller padding */
+    gap: 8px;          /* tighter gaps */
+    border-radius: 30px; /* smaller round */
+    font-size: 0.85rem; /* smaller font */
+    max-width: 90vw; 
+    overflow-x: auto;
+  }
+
+  .navbar-links a {
+    font-size: 0.8rem; /* reduced font size */
+    padding: 4px 8px;  /* smaller pills */
+  }
+
+  .navbar-links::-webkit-scrollbar {
+    display: none; /* hide scrollbar */
+  }
+
+  .profile-name {
+    font-size: 0.8rem;  /* smaller profile text */
+    padding: 4px 10px;  /* smaller capsule */
   }
 }

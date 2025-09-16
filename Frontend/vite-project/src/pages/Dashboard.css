@@ -169,3 +169,21 @@
   color: #1e90ff; 
   word-break: break-all;
 }
+
+
+/* 📱 Mobile screens */
+@media (max-width: 600px) {
+  .dashboard-box {
+    max-width: 320px;   /* smaller box */
+    width: 85%;         /* leave some space on both sides */
+    padding: 25px 18px; /* lighter padding */
+  }
+
+  .dashboard-title {
+    font-size: 1.4rem;
+  }
+
+  .dashboard-subtitle {
+    font-size: 0.85rem;
+  }
+}

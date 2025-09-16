@@ -142,3 +142,30 @@
   }
 }
 
+
+/* 📱 Mobile fix */
+@media (max-width: 600px) {
+
+  .home-title {
+    font-size: 1.8rem;
+  }
+
+  .home-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .home-features {
+    padding: 0 0px;
+    margin: 20px auto 60px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr; 
+    gap: 20px;
+  }
+
+  .feature-card {
+    width: 90%;  
+    padding: 25px 18px;
+  }
+}

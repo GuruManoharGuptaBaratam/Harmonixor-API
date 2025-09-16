@@ -113,3 +113,31 @@
 .capsule {
   border-radius: 30px;
 }
+
+
+@media (max-width: 600px) {
+  .login-box {
+    max-width: 300px;   
+    padding: 35px 25px; 
+  }
+
+  .login-title {
+    font-size: 1.8rem;  
+    margin-bottom: 20px;
+  }
+
+  .login-input {
+    width: 90%;       
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+
+  .login-button {
+    padding: 11px 0;
+    font-size: 0.95rem;
+  }
+
+  .signup-text {
+    font-size: 0.85rem;
+  }
+}

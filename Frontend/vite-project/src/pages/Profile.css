@@ -70,3 +70,39 @@
   background: #000;
   color: #fff;
 }
+
+
+/* Mobile version adjustments */
+@media (max-width: 480px) {
+  .profile-container {
+    display: flex;
+  justify-content: center;
+  align-items: center;
+    /* Allow container to adjust height */
+            /* Add some padding */
+  }
+
+  .profile-box {
+    padding: 25px 20px;
+    width: 80%;
+    border-radius: 20px;
+    max-width: 90%;        /* Slightly smaller box */
+  }
+
+  .profile-title {
+    font-size: 1.5rem;     /* Smaller title */
+    margin-bottom: 15px;
+  }
+
+  .profile-json {
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 0.85rem;    /* Smaller JSON text */
+  }
+
+  .profile-btn {
+    padding: 8px 14px;     /* Smaller buttons */
+    gap: 4px;
+    font-size: 0.85rem;
+  }
+}

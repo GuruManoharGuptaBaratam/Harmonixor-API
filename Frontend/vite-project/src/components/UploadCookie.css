@@ -20,7 +20,7 @@
 }
 
 .uploadcookie-input {
-  display: block;
+  display: inline;
   margin: 0 auto;
   padding: 10px;
   border-radius: 25px;
@@ -53,4 +53,16 @@
   margin-top: 12px;
   font-size: 0.9rem;
   color: #000;
+}
+
+@media (max-width: 600px) {
+  .uploadcookie-box {
+    max-width: 300px;   
+    width: 80%;
+    padding: 20px 30px;
+  }
+
+  .uploadcookie-title {
+    font-size: 1.3rem;
+  }
 }
