@@ -6,7 +6,7 @@ import axios from "axios";
 
 function Navbar({ profileName = "User" }) {
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ get current path
+  const location = useLocation(); 
   const [userExisist, setUserExsist] = useState(false);
 
   useEffect(() => {
@@ -14,7 +14,6 @@ function Navbar({ profileName = "User" }) {
       try {
         const token = localStorage.getItem("token");
 
-        // ✅ Only redirect to /login if user is on a protected page
         const protectedRoutes = ["/dashboard", "/profile"];
         if (!token && protectedRoutes.includes(location.pathname)) {
           navigate("/login");

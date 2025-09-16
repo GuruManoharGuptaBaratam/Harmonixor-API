@@ -8,12 +8,12 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ new state
+  const [loading, setLoading] = useState(false); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); 
-    setLoading(true); // ✅ start loading
+    setLoading(true); 
 
     try {
       const response = await axios.post(
@@ -36,7 +36,7 @@ const Login = ({ onLogin }) => {
       console.error("❌ Login failed:", err);
       setError(err.response?.data?.message || "Something went wrong. Try again.");
     } finally {
-      setLoading(false); // ✅ stop loading after success/failure
+      setLoading(false); 
     }
   };
 
