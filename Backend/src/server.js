@@ -9,12 +9,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// user routes
+
 app.get("/checkBackend",(req,res)=>{
   res.json({message: "Backend Server is Running !!!"})
 })
 app.use(cors({
-  origin: 'https://harmonixor-api-pcfs.vercel.app', // your Vercel frontend
+  origin: 'https://harmonixor-api-pcfs.vercel.app', 
   credentials: true
 }));
 

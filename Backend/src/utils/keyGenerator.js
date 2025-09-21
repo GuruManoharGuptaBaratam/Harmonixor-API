@@ -1,4 +1,4 @@
-// generates a random 10-character API key
+
 function generateApiKey(length = 10) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let key = '';

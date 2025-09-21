@@ -114,10 +114,10 @@
   border-radius: 30px;
 }
 
-/* ✅ Loading state animation for button */
+
 .login-button.loading {
   position: relative;
-  color: #fff; /* text turns white */
+  color: #fff;
   overflow: hidden;
 }
 
@@ -133,7 +133,7 @@
   z-index: 0;
 }
 
-/* keep text visible above animation */
+
 .login-button.loading {
   position: relative;
   z-index: 1;
@@ -144,7 +144,7 @@
   z-index: 2;
 }
 
-/* Keyframes for looping fill */
+
 @keyframes buttonFill {
   0% {
     left: -100%;
@@ -157,7 +157,7 @@
   }
 }
 .progress-bar {
-  animation: fill 5s linear forwards; /* slower animation */
+  animation: fill 5s linear forwards; 
 }
 
 @media (max-width: 600px) {

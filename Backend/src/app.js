@@ -12,14 +12,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Mount routes
+
 app.use("/harmonixor/songs", devApiRoutes);
 app.use("/harmonixor/users", userRoutes);
 app.use("/harmonixor/users",user)
 app.use("/harmonixor/extension",extensionRouter)
 
 
-sequelize.sync({ alter: true })  // or { force: true } if you want to drop & recreate
+sequelize.sync({ alter: true })
   .then(() => {
     console.log('✅ Database & tables synced successfully');
   })
