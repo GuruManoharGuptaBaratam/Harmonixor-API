@@ -19,12 +19,6 @@ app.use("/harmonixor/users",user)
 app.use("/harmonixor/extension",extensionRouter)
 
 
-app.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "chrome-extension://mmbkipibbeblelapplbabgmceadidojg");
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, x-api-key");
-  res.sendStatus(200);
-});
 sequelize.sync({ alter: true })  // or { force: true } if you want to drop & recreate
   .then(() => {
     console.log('✅ Database & tables synced successfully');
