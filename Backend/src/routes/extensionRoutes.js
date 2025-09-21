@@ -28,6 +28,7 @@ router.post("/validate", async (req, res) => {
   } catch (err) {
     console.error("Validation Error:", err);
     res.status(500).json({ success: false, error: "Server error during validation" });
+    console.log("error occured")
   }
 });
 
