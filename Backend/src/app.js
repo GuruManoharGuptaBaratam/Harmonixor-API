@@ -4,6 +4,7 @@ const devApiRoutes = require("./routes/songs");
 const sequelize = require('./models/db');
 const user = require("./routes/user");
 const userRoutes = require("./routes/userRoutes")
+const extensionRouter = require("./routes/extensionRoutes")
 
 
 const app = express();
@@ -15,9 +16,7 @@ app.use(express.json());
 app.use("/harmonixor/songs", devApiRoutes);
 app.use("/harmonixor/users", userRoutes);
 app.use("/harmonixor/users",user)
-
-
-
+app.use("/harmonixor/extension",extensionRouter)
 
 
 
