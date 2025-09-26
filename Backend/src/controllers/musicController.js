@@ -29,9 +29,9 @@ async function handleSongSearch(req, res, songNameParam) {
 
     const proxy = user.proxy || null;
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
-
     const safeQuery = songName.replace(/"/g, '\\"');
-    let command = `yt-dlp -j --no-playlist --cookies "${tempCookiePath}" --user-agent "${userAgent}" --add-header "Accept-Language: en-US,en;q=0.9" --sleep-interval 2 --max-sleep-interval 4 "ytsearch1:${safeQuery} lyrical" -f "bestaudio/best" --extractor-args "youtube:player-client=android"`;
+
+    let command = `yt-dlp -j --no-playlist --cookies "${tempCookiePath}" --user-agent "${userAgent}" --add-header "Accept-Language: en-US,en;q=0.9" --sleep-interval 2 --max-sleep-interval 4 "ytsearch1:${safeQuery} lyrical" -f "bestaudio/best"`;
 
     if (proxy) {
       command += ` --proxy "${proxy}"`;
@@ -116,7 +116,6 @@ async function handleSongSearch(req, res, songNameParam) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 }
-
 
 
 function handleSongStream(req, res, songUrlParam) {
