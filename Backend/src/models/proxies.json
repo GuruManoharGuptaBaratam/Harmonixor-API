@@ -1,6 +1,0 @@
-[
-  "http://username:password@1.2.3.4:8080",
-  "http://anotheruser:anotherpass@5.6.7.8:8080",
-  "socks5://9.10.11.12:1080",
-  "socks5://user:pass@13.14.15.16:1080"
-]

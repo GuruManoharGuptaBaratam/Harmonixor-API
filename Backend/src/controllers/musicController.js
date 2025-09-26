@@ -1,117 +1,72 @@
-const { exec } = require("child_process");
+const { exec, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const User = require("../models/User");
-
-function getRandomProxy() {
-  const proxyFile = path.join(__dirname, "../models/proxies.json");
-  if (!fs.existsSync(proxyFile)) return null;
-  const proxies = JSON.parse(fs.readFileSync(proxyFile, "utf8"));
-  if (!proxies || proxies.length === 0) return null;
-  const idx = Math.floor(Math.random() * proxies.length);
-  return proxies[idx];
-}
+const User = require("../models/User"); // Sequelize model
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
-    const APIKEY = req.apiKey;
+    const APIKEY = req.apiKey
     if (!APIKEY) return res.status(401).json({ error: "API key missing" });
+
 
     const user = await User.findOne({ where: { apiKey: APIKEY } });
     if (!user) return res.status(403).json({ error: "Invalid API key" });
 
+
     const cookieBase64 = user.cookieFile;
     if (!cookieBase64) return res.status(400).json({ error: "No cookie found for this user" });
 
+
     const buffer = Buffer.from(cookieBase64, "base64");
     const cookiesDir = path.join(__dirname, "../../UserCookies");
-    if (!fs.existsSync(cookiesDir)) fs.mkdirSync(cookiesDir, { recursive: true });
+
+
+    if (!fs.existsSync(cookiesDir)) {
+      fs.mkdirSync(cookiesDir, { recursive: true });
+    }
 
     const tempCookiePath = path.join(cookiesDir, `temp_cookie_${Date.now()}.txt`);
-    await fs.promises.writeFile(tempCookiePath, buffer, { encoding: "utf8" });
+
+    await fs.promises.writeFile(tempCookiePath, buffer);
 
     const songName = songNameParam || req.query.song || req.body.songName;
     if (!songName || typeof songName !== "string") {
-      await fs.promises.unlink(tempCookiePath).catch(() => {});
+      await fs.promises.unlink(tempCookiePath);
       return res.status(400).json({ error: "Invalid song name" });
     }
 
-    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
-    const safeQuery = songName.replace(/"/g, '\\"');
+  
+    const command = `yt-dlp --cookies "${tempCookiePath}" -f "bestaudio[ext=m4a]/bestaudio" --default-search "ytsearch" --get-title --get-thumbnail --get-url --sponsorblock-remove all "${songName} lyrical"`;
 
-    const maxRetries = 4;
-    const runYtDlp = (attempt = 1) => {
-      return new Promise((resolve, reject) => {
-        const proxy = user.proxy || getRandomProxy();
-        let command = `yt-dlp -j --no-playlist --cookies "/path/to/temp_cookie.txt" "ytsearch1:sahana lyrical" -f bestaudio/best`;
-        if (proxy) command += ` --proxy "${proxy}"`;
+    exec(command, async (error, stdout, stderr) => {
 
-        console.log(`Running yt-dlp attempt ${attempt}, proxy: ${proxy || "none"}`);
-        exec(command, { maxBuffer: 40 * 1024 * 1024, timeout: 20000 }, async (error, stdout, stderr) => {
-          const stderrStr = (stderr || "").toString();
-          const stdoutStr = (stdout || "").toString();
-          const signInBlocked = /Sign in to confirm you|confirm you're not a bot|sign in to continue/i.test(stderrStr + stdoutStr);
-          const is429 = /429|Too Many Requests/i.test(stderrStr) || /HTTP Error 429/i.test(stderrStr);
-          const transient = /timed out|temporary failure|502|503|504|Connection reset/i.test(stderrStr);
-
-          if (error || !stdoutStr) {
-            if (signInBlocked) return reject(new Error("YOUTUBE_SIGNIN_REQUIRED: Invalid/expired cookie or CAPTCHA required."));
-            if ((is429 || transient) && attempt < maxRetries) {
-              const delay = 1500 * Math.pow(2, attempt - 1);
-              return setTimeout(() => {
-                runYtDlp(attempt + 1).then(resolve).catch(reject);
-              }, delay);
-            }
-            return reject(new Error(stderrStr || (error && error.message) || "Unknown yt-dlp error"));
-          }
-
-          try {
-            const data = JSON.parse(stdoutStr);
-            return resolve(data);
-          } catch {
-            const firstJsonIndex = stdoutStr.indexOf('{');
-            if (firstJsonIndex !== -1) {
-              try {
-                const maybeJson = JSON.parse(stdoutStr.slice(firstJsonIndex));
-                return resolve(maybeJson);
-              } catch {}
-            }
-            return reject(new Error("Failed to parse yt-dlp JSON output"));
-          }
-        });
-      });
-    };
-
-    try {
-      const data = await runYtDlp();
-      let streamUrl = "";
-      if (data.formats && Array.isArray(data.formats) && data.formats.length) {
-        const audioFormats = data.formats.filter(f => f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none'));
-        let preferred = audioFormats.find(f => f.ext === "m4a") || audioFormats.find(f => f.ext === "webm");
-        if (!preferred) preferred = audioFormats.sort((a, b) => (b.abr || 0) - (a.abr || 0))[0];
-        streamUrl = preferred ? preferred.url : (data.url || "");
-      } else {
-        streamUrl = data.url || "";
+      try {
+        await fs.promises.unlink(tempCookiePath);
+      } catch (unlinkErr) {
+        console.error("Failed to delete temp cookie:", unlinkErr);
       }
 
-      if (!streamUrl) return res.status(500).json({ error: "No valid audio stream found" });
-
-      res.status(200).json({
-        title: data.title || "Unknown Title",
-        thumbnail: data.thumbnail || null,
-        streamUrl: encodeURIComponent(streamUrl)
-      });
-
-    } catch (ytErr) {
-      if (ytErr.message && ytErr.message.startsWith("YOUTUBE_SIGNIN_REQUIRED")) {
-        return res.status(400).json({ error: "Cookie/Auth required", details: ytErr.message });
+      if (error || !stdout) {
+        console.error("yt-dlp error:", error || stderr);
+        return res.status(500).json({ error: "Error extracting media", details: stderr || error.message });
       }
-      res.status(500).json({ error: "Error extracting media", details: ytErr.message || String(ytErr) });
-    } finally {
-      try { await fs.promises.unlink(tempCookiePath); } catch (e) {}
-    }
+
+      const lines = stdout.trim().split("\n");
+      const title = lines[0] || "";
+      const songUrl = lines[1] || "";
+      const thumbnail = lines[2] || "";
+
+      if (!songUrl) {
+        return res.status(500).json({ error: "Failed to get song URL from yt-dlp" });
+      }
+
+      const streamUrl = encodeURIComponent(songUrl);
+
+      res.status(200).json({ title, thumbnail, streamUrl });
+    });
 
   } catch (err) {
+    console.error("handleSongSearch error:", err);
     res.status(500).json({ error: "Server error", details: err.message });
   }
 }
