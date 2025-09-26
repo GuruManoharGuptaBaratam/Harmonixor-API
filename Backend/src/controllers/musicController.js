@@ -71,36 +71,26 @@ async function handleSongSearch(req, res, songNameParam) {
   }
 }
 
+const { exec } = require("child_process");
+
 function handleSongStream(req, res, songUrlParam) {
   try {
     const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
-    if (!songUrl) return res.status(400).send("URL missing");
+    if (!songUrl) return res.status(400).json({ error: "URL missing" });
 
-    const ytdlp = spawn("yt-dlp", ["-f", "bestaudio", "-o", "-", songUrl]);
-    const ffmpeg = spawn("ffmpeg", ["-i", "pipe:0", "-f", "mp3", "-ab", "192k", "-vn", "pipe:1"]);
+    // Use yt-dlp to get the best audio URL
+    exec(`yt-dlp -f bestaudio -g "${songUrl}"`, (err, stdout, stderr) => {
+      if (err) {
+        console.error("yt-dlp error:", stderr);
+        return res.status(500).json({ error: "Failed to get audio URL" });
+      }
 
-    res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader("Transfer-Encoding", "chunked");
-
-    ytdlp.stdout.pipe(ffmpeg.stdin);
-    ffmpeg.stdout.pipe(res);
-
-    ytdlp.stderr.on("data", (data) => console.error("yt-dlp error:", data.toString()));
-    ffmpeg.stderr.on("data", (data) => console.error("ffmpeg error:", data.toString()));
-
-    ytdlp.on("error", (err) => {
-      console.error("yt-dlp process error:", err);
-      res.end();
+      const directAudioUrl = stdout.trim(); // This is a temporary direct URL
+      res.json({ downloadUrl: directAudioUrl });
     });
-
-    ffmpeg.on("error", (err) => {
-      console.error("ffmpeg process error:", err);
-      res.end();
-    });
-
   } catch (err) {
-    console.error("handleSongStream error:", err);
-    res.status(500).json({ error: "Server error", details: err.message });
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 }
 
