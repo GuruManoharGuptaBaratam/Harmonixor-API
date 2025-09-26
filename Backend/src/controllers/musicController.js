@@ -3,6 +3,17 @@ const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
 
+function getRandomProxy() {
+  const proxyFile = path.join(__dirname, "../models/proxies.json");
+  if (!fs.existsSync(proxyFile)) return null;
+
+  const proxies = JSON.parse(fs.readFileSync(proxyFile, "utf8"));
+  if (!proxies || proxies.length === 0) return null;
+
+  const idx = Math.floor(Math.random() * proxies.length);
+  return proxies[idx];
+}
+
 async function handleSongSearch(req, res, songNameParam) {
   try {
     const APIKEY = req.apiKey;
@@ -27,7 +38,7 @@ async function handleSongSearch(req, res, songNameParam) {
       return res.status(400).json({ error: "Invalid song name" });
     }
 
-    const proxy = user.proxy || null;
+    const proxy = user.proxy || getRandomProxy();
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
     const safeQuery = songName.replace(/"/g, '\\"');
 
