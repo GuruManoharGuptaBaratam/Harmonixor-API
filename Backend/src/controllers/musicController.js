@@ -3,6 +3,15 @@ const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
 
+function getRandomProxy() {
+  const proxyFile = path.join(__dirname, "../models/proxies.json");
+  if (!fs.existsSync(proxyFile)) return null;
+  const proxies = JSON.parse(fs.readFileSync(proxyFile, "utf8"));
+  if (!proxies || proxies.length === 0) return null;
+  const idx = Math.floor(Math.random() * proxies.length);
+  return proxies[idx];
+}
+
 async function handleSongSearch(req, res, songNameParam) {
   try {
     const APIKEY = req.apiKey;
@@ -23,24 +32,22 @@ async function handleSongSearch(req, res, songNameParam) {
 
     const songName = songNameParam || req.query.song || req.body.songName;
     if (!songName || typeof songName !== "string") {
-      await fs.promises.unlink(tempCookiePath).catch(()=>{});
+      await fs.promises.unlink(tempCookiePath).catch(() => {});
       return res.status(400).json({ error: "Invalid song name" });
     }
 
-    const proxy = user.proxy || null;
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
-
     const safeQuery = songName.replace(/"/g, '\\"');
-    let command = `yt-dlp -j --no-playlist --cookies "${tempCookiePath}" --user-agent "${userAgent}" --add-header "Accept-Language: en-US,en;q=0.9" --sleep-interval 2 --max-sleep-interval 4 "ytsearch1:${safeQuery} lyrical" -f "bestaudio/best" --extractor-args "youtube:player-client=android"`;
-
-    if (proxy) {
-      command += ` --proxy "${proxy}"`;
-    }
 
     const maxRetries = 4;
     const runYtDlp = (attempt = 1) => {
       return new Promise((resolve, reject) => {
-        exec(command, { maxBuffer: 40 * 1024 * 1024 }, async (error, stdout, stderr) => {
+        const proxy = user.proxy || getRandomProxy();
+        let command = `yt-dlp -j --no-playlist --cookies "${tempCookiePath}" --user-agent "${userAgent}" --add-header "Accept-Language: en-US,en;q=0.9" --sleep-interval 2 --max-sleep-interval 4 "ytsearch1:${safeQuery} lyrical" -f "bestaudio/best"`;
+        if (proxy) command += ` --proxy "${proxy}"`;
+
+        console.log(`Running yt-dlp attempt ${attempt}, proxy: ${proxy || "none"}`);
+        exec(command, { maxBuffer: 40 * 1024 * 1024, timeout: 20000 }, async (error, stdout, stderr) => {
           const stderrStr = (stderr || "").toString();
           const stdoutStr = (stdout || "").toString();
           const signInBlocked = /Sign in to confirm you|confirm you're not a bot|sign in to continue/i.test(stderrStr + stdoutStr);
@@ -48,29 +55,26 @@ async function handleSongSearch(req, res, songNameParam) {
           const transient = /timed out|temporary failure|502|503|504|Connection reset/i.test(stderrStr);
 
           if (error || !stdoutStr) {
-            if (signInBlocked) {
-              return reject(new Error("YOUTUBE_SIGNIN_REQUIRED: The cookie appears invalid/expired or account needs CAPTCHA. Export fresh cookies in Netscape format and retry."));
-            }
+            if (signInBlocked) return reject(new Error("YOUTUBE_SIGNIN_REQUIRED: Invalid/expired cookie or CAPTCHA required."));
             if ((is429 || transient) && attempt < maxRetries) {
               const delay = 1500 * Math.pow(2, attempt - 1);
               return setTimeout(() => {
                 runYtDlp(attempt + 1).then(resolve).catch(reject);
               }, delay);
             }
-            const combined = stderrStr || (error && error.message) || "Unknown yt-dlp error";
-            return reject(new Error(combined));
+            return reject(new Error(stderrStr || (error && error.message) || "Unknown yt-dlp error"));
           }
 
           try {
             const data = JSON.parse(stdoutStr);
             return resolve(data);
-          } catch (parseErr) {
+          } catch {
             const firstJsonIndex = stdoutStr.indexOf('{');
             if (firstJsonIndex !== -1) {
               try {
                 const maybeJson = JSON.parse(stdoutStr.slice(firstJsonIndex));
                 return resolve(maybeJson);
-              } catch (e) {}
+              } catch {}
             }
             return reject(new Error("Failed to parse yt-dlp JSON output"));
           }
@@ -83,19 +87,14 @@ async function handleSongSearch(req, res, songNameParam) {
       let streamUrl = "";
       if (data.formats && Array.isArray(data.formats) && data.formats.length) {
         const audioFormats = data.formats.filter(f => f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none'));
-        let preferred = audioFormats.find(f => f.ext === "m4a") ||
-                        audioFormats.find(f => f.ext === "webm");
-        if (!preferred) {
-          preferred = audioFormats.sort((a,b) => (b.abr || 0) - (a.abr || 0))[0];
-        }
+        let preferred = audioFormats.find(f => f.ext === "m4a") || audioFormats.find(f => f.ext === "webm");
+        if (!preferred) preferred = audioFormats.sort((a, b) => (b.abr || 0) - (a.abr || 0))[0];
         streamUrl = preferred ? preferred.url : (data.url || "");
       } else {
         streamUrl = data.url || "";
       }
 
-      if (!streamUrl) {
-        return res.status(500).json({ error: "No valid audio stream found" });
-      }
+      if (!streamUrl) return res.status(500).json({ error: "No valid audio stream found" });
 
       res.status(200).json({
         title: data.title || "Unknown Title",
@@ -116,8 +115,6 @@ async function handleSongSearch(req, res, songNameParam) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 }
-
-
 
 function handleSongStream(req, res, songUrlParam) {
   try {
