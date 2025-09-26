@@ -71,7 +71,6 @@ async function handleSongSearch(req, res, songNameParam) {
   }
 }
 
-const { exec } = require("child_process");
 
 function handleSongStream(req, res, songUrlParam) {
   try {
