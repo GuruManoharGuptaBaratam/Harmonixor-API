@@ -71,36 +71,48 @@ async function handleSongSearch(req, res, songNameParam) {
   }
 }
 
+const { spawn } = require("child_process");
+
 function handleSongStream(req, res, songUrlParam) {
   try {
-  const songUrl = decodeURIComponent(songUrlParam || req.query.songUrl);
-    if (!songUrl) return res.status(400).send("URL missing");
-
-const ffmpeg = spawn("ffmpeg", ["-i", songUrl, "-f", "mp3", "-ab", "192k", "-vn", "pipe:1"]);
+    const songUrl = decodeURIComponent(songUrlParam || req.query.songUrl || req.body.songUrl);
+    if (!songUrl) {
+      return res.status(400).json({ error: "URL missing" });
+    }
 
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Transfer-Encoding", "chunked");
-    res.write("");
-    ytdlp.stdout.pipe(ffmpeg.stdin);
+
+    const ffmpeg = spawn("ffmpeg", [
+      "-i", songUrl,
+      "-f", "mp3",
+      "-ab", "192k",
+      "-vn",
+      "pipe:1"
+    ]);
+
     ffmpeg.stdout.pipe(res);
 
-    ytdlp.stderr.on("data", (data) => console.error("yt-dlp error:", data.toString()));
-    ffmpeg.stderr.on("data", (data) => console.error("ffmpeg error:", data.toString()));
-
-    ytdlp.on("error", (err) => {
-      console.error("yt-dlp process error:", err);
-      res.end();
+    ffmpeg.stderr.on("data", (data) => {
+      console.error("ffmpeg error:", data.toString());
     });
 
     ffmpeg.on("error", (err) => {
       console.error("ffmpeg process error:", err);
+      if (!res.headersSent) res.status(500).end("Server error");
+      else res.end();
+    });
+
+    ffmpeg.on("close", () => {
       res.end();
     });
 
   } catch (err) {
     console.error("handleSongStream error:", err);
-    res.status(500).json({ error: "Server error", details: err.message });
+    if (!res.headersSent) res.status(500).json({ error: "Server error", details: err.message });
+    else res.end();
   }
 }
+
 
 module.exports = { handleSongSearch, handleSongStream };
