@@ -43,7 +43,7 @@ async function handleSongSearch(req, res, songNameParam) {
     const runYtDlp = (attempt = 1) => {
       return new Promise((resolve, reject) => {
         const proxy = user.proxy || getRandomProxy();
-        let command = `yt-dlp -j --no-playlist --cookies "${tempCookiePath}" --user-agent "${userAgent}" --add-header "Accept-Language: en-US,en;q=0.9" --sleep-interval 2 --max-sleep-interval 4 "ytsearch1:${safeQuery} lyrical" -f "bestaudio/best"`;
+        let command = `yt-dlp -j --no-playlist --cookies "/path/to/temp_cookie.txt" "ytsearch1:sahana lyrical" -f bestaudio/best`;
         if (proxy) command += ` --proxy "${proxy}"`;
 
         console.log(`Running yt-dlp attempt ${attempt}, proxy: ${proxy || "none"}`);
