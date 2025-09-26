@@ -73,15 +73,14 @@ async function handleSongSearch(req, res, songNameParam) {
 
 function handleSongStream(req, res, songUrlParam) {
   try {
-    const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
+  const songUrl = decodeURIComponent(songUrlParam || req.query.songUrl);
     if (!songUrl) return res.status(400).send("URL missing");
 
-    const ytdlp = spawn("yt-dlp", ["-f", "bestaudio", "-o", "-", songUrl]);
-    const ffmpeg = spawn("ffmpeg", ["-i", "pipe:0", "-f", "mp3", "-ab", "192k", "-vn", "pipe:1"]);
+const ffmpeg = spawn("ffmpeg", ["-i", songUrl, "-f", "mp3", "-ab", "192k", "-vn", "pipe:1"]);
 
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Transfer-Encoding", "chunked");
-
+    res.write("");
     ytdlp.stdout.pipe(ffmpeg.stdin);
     ffmpeg.stdout.pipe(res);
 
