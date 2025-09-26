@@ -19,41 +19,60 @@ async function handleSongSearch(req, res, songNameParam) {
     if (!fs.existsSync(cookiesDir)) fs.mkdirSync(cookiesDir, { recursive: true });
 
     const tempCookiePath = path.join(cookiesDir, `temp_cookie_${Date.now()}.txt`);
-    await fs.promises.writeFile(tempCookiePath, buffer);
+    await fs.promises.writeFile(tempCookiePath, buffer, { encoding: "utf8" });
 
     const songName = songNameParam || req.query.song || req.body.songName;
     if (!songName || typeof songName !== "string") {
-      await fs.promises.unlink(tempCookiePath);
+      await fs.promises.unlink(tempCookiePath).catch(()=>{});
       return res.status(400).json({ error: "Invalid song name" });
     }
 
-    // 🔄 Retry logic with exponential backoff
-    const maxRetries = 3;
+    const proxy = user.proxy || null;
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
 
+    const safeQuery = songName.replace(/"/g, '\\"');
+    let command = `yt-dlp -j --no-playlist --cookies "${tempCookiePath}" --user-agent "${userAgent}" --add-header "Accept-Language: en-US,en;q=0.9" --sleep-interval 2 --max-sleep-interval 4 "ytsearch1:${safeQuery} lyrical" -f "bestaudio/best" --extractor-args "youtube:player-client=android"`;
+
+    if (proxy) {
+      command += ` --proxy "${proxy}"`;
+    }
+
+    const maxRetries = 4;
     const runYtDlp = (attempt = 1) => {
       return new Promise((resolve, reject) => {
-        const command = `yt-dlp --cookies "${tempCookiePath}" -f "bestaudio/best" --default-search "ytsearch" -j "${songName} lyrical"`;
-        exec(command, async (error, stdout, stderr) => {
-          if (error || !stdout) {
-            const errMsg = stderr || error.message;
+        exec(command, { maxBuffer: 40 * 1024 * 1024 }, async (error, stdout, stderr) => {
+          const stderrStr = (stderr || "").toString();
+          const stdoutStr = (stdout || "").toString();
+          const signInBlocked = /Sign in to confirm you|confirm you're not a bot|sign in to continue/i.test(stderrStr + stdoutStr);
+          const is429 = /429|Too Many Requests/i.test(stderrStr) || /HTTP Error 429/i.test(stderrStr);
+          const transient = /timed out|temporary failure|502|503|504|Connection reset/i.test(stderrStr);
 
-            // Retry on 429 or common transient errors
-            if ((errMsg.includes("429") || errMsg.includes("format")) && attempt < maxRetries) {
-              const delay = 2000 * Math.pow(2, attempt - 1); // 2s, 4s, 8s
-              console.warn(`Retrying yt-dlp (attempt ${attempt + 1}) after ${delay}ms...`);
+          if (error || !stdoutStr) {
+            if (signInBlocked) {
+              return reject(new Error("YOUTUBE_SIGNIN_REQUIRED: The cookie appears invalid/expired or account needs CAPTCHA. Export fresh cookies in Netscape format and retry."));
+            }
+            if ((is429 || transient) && attempt < maxRetries) {
+              const delay = 1500 * Math.pow(2, attempt - 1);
               return setTimeout(() => {
                 runYtDlp(attempt + 1).then(resolve).catch(reject);
               }, delay);
             }
-
-            return reject(new Error(errMsg));
+            const combined = stderrStr || (error && error.message) || "Unknown yt-dlp error";
+            return reject(new Error(combined));
           }
 
           try {
-            const data = JSON.parse(stdout);
-            resolve(data);
+            const data = JSON.parse(stdoutStr);
+            return resolve(data);
           } catch (parseErr) {
-            reject(new Error("Failed to parse yt-dlp JSON output"));
+            const firstJsonIndex = stdoutStr.indexOf('{');
+            if (firstJsonIndex !== -1) {
+              try {
+                const maybeJson = JSON.parse(stdoutStr.slice(firstJsonIndex));
+                return resolve(maybeJson);
+              } catch (e) {}
+            }
+            return reject(new Error("Failed to parse yt-dlp JSON output"));
           }
         });
       });
@@ -61,17 +80,17 @@ async function handleSongSearch(req, res, songNameParam) {
 
     try {
       const data = await runYtDlp();
-
-      // Pick best audio stream dynamically
       let streamUrl = "";
-      if (data.formats && data.formats.length > 0) {
-        const audioFormats = data.formats.filter(f => f.acodec !== "none" && !f.vcodec);
-        const preferred = audioFormats.find(f => f.ext === "m4a") ||
-                          audioFormats.find(f => f.ext === "webm") ||
-                          audioFormats[0];
-        streamUrl = preferred ? preferred.url : data.url;
+      if (data.formats && Array.isArray(data.formats) && data.formats.length) {
+        const audioFormats = data.formats.filter(f => f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none'));
+        let preferred = audioFormats.find(f => f.ext === "m4a") ||
+                        audioFormats.find(f => f.ext === "webm");
+        if (!preferred) {
+          preferred = audioFormats.sort((a,b) => (b.abr || 0) - (a.abr || 0))[0];
+        }
+        streamUrl = preferred ? preferred.url : (data.url || "");
       } else {
-        streamUrl = data.url;
+        streamUrl = data.url || "";
       }
 
       if (!streamUrl) {
@@ -85,19 +104,19 @@ async function handleSongSearch(req, res, songNameParam) {
       });
 
     } catch (ytErr) {
-      console.error("yt-dlp final error:", ytErr);
-      res.status(500).json({ error: "Error extracting media", details: ytErr.message });
+      if (ytErr.message && ytErr.message.startsWith("YOUTUBE_SIGNIN_REQUIRED")) {
+        return res.status(400).json({ error: "Cookie/Auth required", details: ytErr.message });
+      }
+      res.status(500).json({ error: "Error extracting media", details: ytErr.message || String(ytErr) });
     } finally {
-      try { await fs.promises.unlink(tempCookiePath); } catch {}
+      try { await fs.promises.unlink(tempCookiePath); } catch (e) {}
     }
 
   } catch (err) {
-    console.error("handleSongSearch error:", err);
     res.status(500).json({ error: "Server error", details: err.message });
   }
 }
 
-module.exports = { handleSongSearch };
 
 
 function handleSongStream(req, res, songUrlParam) {
