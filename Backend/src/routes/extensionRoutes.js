@@ -11,14 +11,13 @@ router.post("/validate", async (req, res) => {
       return res.status(400).json({ success: false, error: "Email and API key required" });
     }
 
-    // find user by email
+
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(404).json({ success: false, error: "user_not_found" });
     }
 
-    // Check API key match
     if (user.apiKey !== apiKey) {
       return res.status(401).json({ success: false, error: "invalid_api_key" });
     }
@@ -35,25 +34,25 @@ router.post("/validate", async (req, res) => {
 
 router.post("/save-cookie", async (req, res) => {
   try {
-    const { email, cookie, apiKey } = req.body; // cookie = Base64 Netscape cookie
+    const { email, cookie, apiKey } = req.body; 
 
     if (!email || !cookie || !apiKey) {
       return res.status(400).json({ success: false, error: "Email, cookie, and API key required" });
     }
 
-    // find user by email
+
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(404).json({ success: false, error: "user_not_found" });
     }
 
-    // Validate API key
+
     if (user.apiKey !== apiKey) {
       return res.status(401).json({ success: false, error: "invalid_api_key" });
     }
 
-    user.cookieFile = cookie; // save Base64 Netscape cookie
+    user.cookieFile = cookie; 
     await user.save();
 
     res.status(200).json({ success: true, message: "Cookie saved successfully" });

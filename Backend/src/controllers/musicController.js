@@ -1,7 +1,7 @@
 const { exec, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const User = require("../models/User"); // Sequelize model
+const User = require("../models/User"); 
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
@@ -77,14 +77,14 @@ function handleSongStream(req, res, songUrlParam) {
     const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
     if (!songUrl) return res.status(400).json({ error: "URL missing" });
 
-    // Use yt-dlp to get the best audio URL
+
     exec(`yt-dlp -f bestaudio -g "${songUrl}"`, (err, stdout, stderr) => {
       if (err) {
         console.error("yt-dlp error:", stderr);
         return res.status(500).json({ error: "Failed to get audio URL" });
       }
 
-      const directAudioUrl = stdout.trim(); // This is a temporary direct URL
+      const directAudioUrl = stdout.trim();
       res.json({ downloadUrl: directAudioUrl });
     });
   } catch (err) {

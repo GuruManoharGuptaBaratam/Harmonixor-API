@@ -21,10 +21,10 @@ app.use("/harmonixor/extension",extensionRouter)
 
 sequelize.sync({ alter: true })
   .then(() => {
-    console.log('✅ Database & tables synced successfully');
+    console.log('-- Database & tables synced successfully');
   })
   .catch(err => {
-    console.error('❌ Error syncing database:', err);
+    console.error('-- Error syncing database:', err);
   });
 const path = require("path");
 

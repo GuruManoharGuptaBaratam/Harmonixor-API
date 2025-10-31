@@ -8,11 +8,11 @@ async function apiKeyAuth(req, res, next) {
     const user = await User.findOne({ where: { apiKey } });
     if (!user) return res.status(403).json({ error: "Invalid API key" });
 
-    // ✅ attach user info and API key to req
+
     req.user = user;
     req.apiKey = apiKey;
 
-    // ✅ proceed to next middleware/controller
+  
     next();
   } catch (err) {
     console.error("API Key Auth Error:", err);

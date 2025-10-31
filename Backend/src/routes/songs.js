@@ -4,7 +4,7 @@ const apiKeyAuth = require("../middleware/apiAuth");
 
 const router = express.Router();
 
-// Protect routes with API key middleware
+
 router.get("/search", apiKeyAuth, handleDevApiSearchURL);
 router.get("/stream",apiKeyAuth, handleDevApiStreamURL);
 
