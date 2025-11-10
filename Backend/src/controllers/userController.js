@@ -2,7 +2,6 @@ const generateApiKey = require("../utils/keyGenerator");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { use } = require("react");
 async function generateKey(req, res) {
   try {
     const { email } = req.body;
@@ -71,27 +70,26 @@ async function signup(req, res) {
   try {
     const { email, password } = req.body;
 
-    // 1. Validate request
+
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Email and password required" });
     }
 
-    // 2. Check if user already exists
+
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(409).json({ success: false, message: "Email already registered" });
     }
 
-    // 3. Hash the password
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Create the user
+
     const newUser = await User.create({
       email,
       password: hashedPassword,
     });
 
-    // 5. Optional: Generate JWT token
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email },
       process.env.JWT_SECRET || "mysecret",

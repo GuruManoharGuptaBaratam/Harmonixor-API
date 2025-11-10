@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import "./UploadCookie.css"; // ✅ import styles
+import "./UploadCookie.css"; 
 
 function UploadCookie({ userEmail, onUploadSuccess }) {
   const [fileName, setFileName] = useState("");
@@ -36,12 +36,12 @@ function UploadCookie({ userEmail, onUploadSuccess }) {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}harmonixor/users/upload-cookie`,
         { email: userEmail, cookieBase64: base64 },
-        { headers: { "Content-Type": "application/json" } } // 👈 important
+        { headers: { "Content-Type": "application/json" } } 
         );
 
         if (res.data.uploaded === true) {
         if (onUploadSuccess) onUploadSuccess(true);
-            console.log("✅ file is uploaded");
+            console.log("file is uploaded");
             
         } else {
         setError(res.data.message || "Upload failed.");

@@ -10,8 +10,6 @@ router.post("/login", login);
 router.post("/signup", signup);
 
 
-
-
 router.get("/me", authenticateToken, async (req, res) => {
   try {
     const user = await User.findOne({ where: { id: req.user.id } });
@@ -35,7 +33,7 @@ router.post("/upload-cookie", async (req, res) => {
       return res.status(400).json({ error: "Email and cookieBase64 are required" });
     }
 
-    // find user by email
+
     const user = await User.findOne({ where: { email } });
 
     if (!user) {

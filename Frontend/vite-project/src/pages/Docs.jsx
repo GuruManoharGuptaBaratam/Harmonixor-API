@@ -152,7 +152,7 @@ const Docs = () => {
             a.click();
             a.remove();
 
-            console.log("Song download started ✅");
+            console.log("Song download started");
           }
 
           downloadSong().catch(console.error);`}</pre>
