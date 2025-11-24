@@ -46,7 +46,7 @@ async function extractYouTubeAudioURL(videoId, cookieFilePath) {
     timeout: 45000,
   });
 
-  // Trigger playback to force /player
+console.log((await page.content()).slice(0, 600));
   try {
     await page.click("button.ytp-play-button", { timeout: 1500 });
   } catch {}
