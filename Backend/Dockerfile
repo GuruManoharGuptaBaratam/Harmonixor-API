@@ -1,5 +1,6 @@
 FROM node:18-bullseye
 
+
 RUN apt-get update && apt-get install -y \
     libatk1.0-0 \
     libcups2 \
@@ -13,9 +14,23 @@ RUN apt-get update && apt-get install -y \
     libxshmfence1 \
     && rm -rf /var/lib/apt/lists/*
 
+
 RUN npm install -g playwright && playwright install chromium
 
+
 WORKDIR /app
+
+
+COPY package*.json ./
+
+
+RUN npm install
+
+
 COPY . .
+
+
+EXPOSE 5432
+
 
 CMD ["npm", "start"]
