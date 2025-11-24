@@ -4,7 +4,7 @@ const User = require("../models/User");
 const searchVideoIdPlaywright = require("../utils/searchVideoIdPlaywright");
 const extractAudioUrl = require("../utils/playwrightExtractor");
 
-async function handleSongSearch(req, res) {
+async function handleSongSearch(req, res,songNameParam) {
   try {
     const APIKEY = req.apiKey;
     if (!APIKEY) return res.status(401).json({ error: "API key missing" });
@@ -12,12 +12,13 @@ async function handleSongSearch(req, res) {
     const user = await User.findOne({ where: { apiKey: APIKEY } });
     if (!user) return res.status(403).json({ error: "Invalid API key" });
 
-    const songName = req.query.song || req.body.songName;
+    const songName = songNameParam || req.query.song || req.body.songName;
     if (!songName) return res.status(400).json({ error: "Invalid song name" });
 
 
     const videoId = await searchVideoIdPlaywright(songName);
 
+  
     const directAudioUrl = await extractAudioUrl(videoId);
 
     return res.status(200).json({
@@ -31,6 +32,8 @@ async function handleSongSearch(req, res) {
     return res.status(500).json({ error: "Extraction failed", details: err.message });
   }
 }
+
+
 
 function handleSongStream(req, res, songUrlParam) {
   try {
