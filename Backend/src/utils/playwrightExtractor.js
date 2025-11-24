@@ -1,20 +1,18 @@
 const { chromium } = require("playwright");
 
 async function extractYouTubeAudioURL(videoId) {
-    
-const browser = await chromium.launch({
-  headless: true,
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--disable-software-rasterizer",
-    "--disable-features=IsolateOrigins",
-    "--disable-site-isolation-trials"
-  ]
-});
-
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-software-rasterizer",
+      "--disable-features=IsolateOrigins",
+      "--disable-site-isolation-trials"
+    ]
+  });
 
   const page = await browser.newPage();
 
@@ -22,29 +20,44 @@ const browser = await chromium.launch({
 
   page.on("response", async (res) => {
     const url = res.url();
+
+
     if (url.includes("youtubei") && url.includes("player")) {
       try {
-        playerResponse = await res.json();
-      } catch (err) {}
+        const json = await res.json();
+        playerResponse = json;
+      } catch (err) {
+        console.log("Failed to parse player response");
+      }
     }
   });
 
-  await page.goto(`https://www.youtube.com/watch?v=${videoId}`, {
-    waitUntil: "networkidle",
+
+  await page.goto(`https://www.youtube.com/watch?v=${videoId}&bpctr=9999999999`, {
+    waitUntil: "domcontentloaded"
   });
 
-  await page.waitForTimeout(1500);
+  try {
+    await page.click("button.ytp-play-button", { timeout: 3000 });
+  } catch (_) {}
+
+
+  await page.waitForTimeout(3500);
+
   await browser.close();
 
-  if (!playerResponse?.streamingData?.adaptiveFormats) {
-    throw new Error("Failed to extract adaptive formats");
+  if (!playerResponse || !playerResponse.streamingData) {
+    throw new Error("Player response missing");
   }
 
-  const audioFormat = playerResponse.streamingData.adaptiveFormats.find(
-    (f) => f.mimeType?.startsWith("audio")
-  );
+  const formats = playerResponse.streamingData.adaptiveFormats;
+  if (!formats || formats.length === 0) {
+    throw new Error("adaptiveFormats empty");
+  }
 
-  if (!audioFormat?.url) {
+  const audioFormat = formats.find((f) => f.mimeType?.startsWith("audio"));
+
+  if (!audioFormat || !audioFormat.url) {
     throw new Error("Failed to extract audio URL");
   }
 
