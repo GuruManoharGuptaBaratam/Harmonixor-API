@@ -8,61 +8,106 @@ async function extractYouTubeAudioURL(videoId) {
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--disable-software-rasterizer",
       "--disable-features=IsolateOrigins",
-      "--disable-site-isolation-trials"
+      "--disable-site-isolation-trials",
+      "--disable-web-security"
     ]
   });
 
-  const page = await browser.newPage();
+  const context = await browser.newContext({
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36",
+  });
+
+  const page = await context.newPage();
 
   let playerResponse = null;
+
 
   page.on("response", async (res) => {
     const url = res.url();
 
-
-    if (url.includes("youtubei") && url.includes("player")) {
+    if (
+      url.includes("/youtubei/") &&
+      url.includes("player") &&
+      !url.includes("adformat")
+    ) {
       try {
-        const json = await res.json();
-        playerResponse = json;
-      } catch (err) {
-        console.log("Failed to parse player response");
-      }
+        const data = await res.json();
+        if (data?.streamingData) {
+          playerResponse = data;
+        }
+      } catch {}
     }
   });
 
 
-  await page.goto(`https://www.youtube.com/watch?v=${videoId}&bpctr=9999999999`, {
-    waitUntil: "domcontentloaded"
+  await page.goto(`https://www.youtube.com/watch?v=${videoId}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 45000,
   });
 
 
   try {
-    await page.click("button.ytp-play-button", { timeout: 3000 });
-  } catch (_) {}
+    await page.click("button.ytp-play-button", { timeout: 1500 });
+  } catch {}
 
 
   await page.waitForTimeout(3500);
 
+
+  if (!playerResponse) {
+    try {
+      const initial = await page.evaluate(() => {
+        return window.ytInitialPlayerResponse || null;
+      });
+
+      if (initial?.streamingData) {
+        playerResponse = initial;
+      }
+    } catch {}
+  }
+
+
+  if (!playerResponse) {
+    try {
+      const cfg = await page.evaluate(() => {
+        if (
+          window.ytplayer &&
+          window.ytplayer.config &&
+          window.ytplayer.config.args &&
+          window.ytplayer.config.args.player_response
+        ) {
+          return JSON.parse(window.ytplayer.config.args.player_response);
+        }
+        return null;
+      });
+
+      if (cfg?.streamingData) {
+        playerResponse = cfg;
+      }
+    } catch {}
+  }
+
   await browser.close();
 
-  if (!playerResponse || !playerResponse.streamingData) {
+
+  if (!playerResponse) {
     throw new Error("Player response missing");
   }
 
-  const formats = playerResponse.streamingData.adaptiveFormats;
-  if (!formats || formats.length === 0) {
-    throw new Error("adaptiveFormats empty");
+  const formats = playerResponse.streamingData?.adaptiveFormats;
+  if (!formats || !formats.length) {
+    throw new Error("adaptiveFormats missing");
   }
 
-  const audioFormat = formats.find((f) => f.mimeType?.startsWith("audio"));
 
-  if (!audioFormat || !audioFormat.url) {
-    throw new Error("Failed to extract audio URL");
+  const audio = formats.find((f) => f.mimeType?.startsWith("audio"));
+  if (!audio?.url) {
+    throw new Error("No direct audio URL");
   }
 
-  return audioFormat.url;
+  return audio.url;
 }
 
 module.exports = extractYouTubeAudioURL;
