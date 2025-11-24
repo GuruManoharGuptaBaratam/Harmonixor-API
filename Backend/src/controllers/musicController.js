@@ -19,12 +19,12 @@ async function handleSongSearch(req, res,songNameParam) {
     const videoId = await searchVideoIdPlaywright(songName);
 
   
-    const directAudioUrl = await extractYouTubeAudioURL(videoId);
+    // const directAudioUrl = await extractYouTubeAudioURL(videoId);
 
     return res.status(200).json({
       title: songName,
-      videoId,
-      streamUrl: directAudioUrl,
+      videoId
+      // streamUrl: directAudioUrl,
     });
 
   } catch (err) {
