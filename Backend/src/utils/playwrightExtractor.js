@@ -1,6 +1,6 @@
 const { chromium } = require("playwright");
 
-async function extractYouTubeAudioURL(videoId) {
+async function searchVideoIdPlaywright(query) {
   const browser = await chromium.launch({
     headless: true,
     args: [
@@ -8,64 +8,54 @@ async function extractYouTubeAudioURL(videoId) {
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--disable-software-rasterizer",
-      "--disable-features=IsolateOrigins",
-      "--disable-site-isolation-trials"
+      "--disable-software-rasterizer"
     ]
   });
 
   const page = await browser.newPage();
 
-  let playerResponse = null;
+  await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&sp=EgIQAQ%253D%253D`, {
+    waitUntil: "networkidle"
+  });
 
-  page.on("response", async (res) => {
-    try {
-      const url = res.url();
+  // Extract ONLY real videos (exclude Shorts, Mixes, Playlists)
+  const videoId = await page.evaluate(() => {
+    const scripts = Array.from(document.querySelectorAll("script"));
+    for (const s of scripts) {
+      if (!s.innerText.includes("ytInitialData")) continue;
 
-      // Capture ANY version of YouTube player API
-      if (url.includes("/youtubei/") && url.includes("player")) {
-        const json = await res.json();
+      const jsonText = s.innerText
+        .replace("var ytInitialData = ", "")
+        .replace(/;$/, "");
+      const data = JSON.parse(jsonText);
 
-        // Ensure we capture the FIRST valid player response
-        if (json.streamingData) {
-          playerResponse = json;
+      const contents =
+        data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents;
+
+      if (!contents) return null;
+
+      for (const item of contents) {
+        const v = item.videoRenderer;
+
+
+        if (
+          v &&
+          v.videoId &&
+          !v.isShort &&
+          !v.lengthText?.simpleText?.includes("Scheduled") &&
+          v.lengthText // avoid live streams
+        ) {
+          return v.videoId;
         }
       }
-    } catch (err) {
-      console.log("Player API parse failed");
     }
+    return null;
   });
-
-  // Force normal watch page
-  await page.goto(`https://www.youtube.com/watch?v=${videoId}&bpctr=9999999999`, {
-    waitUntil: "domcontentloaded"
-  });
-
-  // Trigger playback to force player API call (SABR workaround)
-  try {
-    await page.click("button.ytp-play-button", { timeout: 2000 });
-  } catch (_) {}
-
-  // Wait long enough for all player APIs to fire
-  await page.waitForTimeout(4000);
 
   await browser.close();
 
-  if (!playerResponse || !playerResponse.streamingData) {
-    throw new Error("Player response missing");
-  }
-
-  const formats = playerResponse.streamingData.adaptiveFormats;
-  if (!formats || formats.length === 0) {
-    throw new Error("adaptiveFormats empty");
-  }
-
-  const audioFormat = formats.find(f => f.mimeType?.startsWith("audio"));
-  if (!audioFormat?.url) {
-    throw new Error("Failed to extract audio URL");
-  }
-
-  return audioFormat.url;
+  if (!videoId) throw new Error("Could not find a valid video");
+  return videoId;
 }
 
-module.exports = extractYouTubeAudioURL;
+module.exports = searchVideoIdPlaywright;
