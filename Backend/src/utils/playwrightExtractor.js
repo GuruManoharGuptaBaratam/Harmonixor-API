@@ -46,6 +46,9 @@ async function extractYouTubeAudioURL(videoId) {
     waitUntil: "domcontentloaded",
     timeout: 45000,
   });
+  const html = await page.content();
+  console.log(html.slice(0, 500));
+
 
 
   try {
