@@ -2,7 +2,7 @@ const { exec } = require("child_process");
 const User = require("../models/User"); 
 
 const searchVideoIdPlaywright = require("../utils/searchVideoIdPlaywright");
-const extractAudioUrl = require("../utils/playwrightExtractor");
+const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
 
 async function handleSongSearch(req, res,songNameParam) {
   try {
@@ -19,7 +19,7 @@ async function handleSongSearch(req, res,songNameParam) {
     const videoId = await searchVideoIdPlaywright(songName);
 
   
-    const directAudioUrl = await extractAudioUrl(videoId);
+    const directAudioUrl = await extractYouTubeAudioURL(videoId);
 
     return res.status(200).json({
       title: songName,
