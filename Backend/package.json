@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
@@ -21,8 +22,9 @@
     "mysql2": "^3.14.5",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
-    "react": "^19.1.1",
-    "sequelize": "^6.37.7"
+    "playwright": "^1.56.1",
+    "sequelize": "^6.37.7",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

@@ -7,11 +7,11 @@ const userRoutes = require("./routes/userRoutes")
 const extensionRouter = require("./routes/extensionRoutes")
 
 
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
 
 app.use("/harmonixor/songs", devApiRoutes);
 app.use("/harmonixor/users", userRoutes);

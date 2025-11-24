@@ -2,6 +2,7 @@ const generateApiKey = require("../utils/keyGenerator");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+
 async function generateKey(req, res) {
   try {
     const { email } = req.body;
@@ -58,6 +59,7 @@ async function login(req, res) {
       { expiresIn: "1d" }
     );
 
+
     res.json({ success: true, message: "Login successful", token });
   } catch (err) {
     console.error(err);
@@ -95,7 +97,7 @@ async function signup(req, res) {
       process.env.JWT_SECRET || "mysecret",
       { expiresIn: "1d" }
     );
-
+    
     res.status(201).json({
       success: true,
       message: "Signup successful",
