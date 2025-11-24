@@ -19,30 +19,35 @@ async function extractYouTubeAudioURL(videoId) {
   let playerResponse = null;
 
   page.on("response", async (res) => {
-    const url = res.url();
+    try {
+      const url = res.url();
 
-
-    if (url.includes("youtubei") && url.includes("player")) {
-      try {
+      // Capture ANY version of YouTube player API
+      if (url.includes("/youtubei/") && url.includes("player")) {
         const json = await res.json();
-        playerResponse = json;
-      } catch (err) {
-        console.log("Failed to parse player response");
+
+        // Ensure we capture the FIRST valid player response
+        if (json.streamingData) {
+          playerResponse = json;
+        }
       }
+    } catch (err) {
+      console.log("Player API parse failed");
     }
   });
 
-
+  // Force normal watch page
   await page.goto(`https://www.youtube.com/watch?v=${videoId}&bpctr=9999999999`, {
     waitUntil: "domcontentloaded"
   });
 
+  // Trigger playback to force player API call (SABR workaround)
   try {
-    await page.click("button.ytp-play-button", { timeout: 3000 });
+    await page.click("button.ytp-play-button", { timeout: 2000 });
   } catch (_) {}
 
-
-  await page.waitForTimeout(3500);
+  // Wait long enough for all player APIs to fire
+  await page.waitForTimeout(4000);
 
   await browser.close();
 
@@ -55,9 +60,8 @@ async function extractYouTubeAudioURL(videoId) {
     throw new Error("adaptiveFormats empty");
   }
 
-  const audioFormat = formats.find((f) => f.mimeType?.startsWith("audio"));
-
-  if (!audioFormat || !audioFormat.url) {
+  const audioFormat = formats.find(f => f.mimeType?.startsWith("audio"));
+  if (!audioFormat?.url) {
     throw new Error("Failed to extract audio URL");
   }
 
