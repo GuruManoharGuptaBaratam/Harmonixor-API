@@ -3,12 +3,16 @@ const fs = require("fs");
 const { parseNetscapeCookies } = require("./cookieParser");
 
 async function extractYouTubeAudioURL(videoId, cookieFilePath) {
-  // FIX 1: Load actual cookie text properly
-  if (!fs.existsSync(cookieFilePath)) {
-    throw new Error("Cookie file does not exist: " + cookieFilePath);
+
+  if (!cookieFilePath || !fs.existsSync(cookieFilePath)) {
+    console.log("Invalid cookieFilePath:", cookieFilePath);
+    throw new Error("Cookie file not found: " + cookieFilePath);
   }
 
+
   const cookieText = fs.readFileSync(cookieFilePath, "utf8");
+
+
   const cookies = parseNetscapeCookies(cookieText);
 
   const browser = await chromium.launch({
@@ -22,7 +26,7 @@ async function extractYouTubeAudioURL(videoId, cookieFilePath) {
   });
 
   const context = await browser.newContext({
-    // FIX 2: Force desktop environment
+
     userAgent:
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36",
     viewport: { width: 1920, height: 1080 },
@@ -30,7 +34,7 @@ async function extractYouTubeAudioURL(videoId, cookieFilePath) {
     locale: "en-US"
   });
 
-  // FIX 3: Force desktop layout (block miniplayer)
+
   await context.addInitScript(() => {
     Object.defineProperty(window, "matchMedia", {
       value: () => ({ matches: false })
@@ -40,13 +44,13 @@ async function extractYouTubeAudioURL(videoId, cookieFilePath) {
     });
   });
 
-  // FIX 4: Add cookies BEFORE creating pages
+
   if (cookies.length) await context.addCookies(cookies);
 
   const page = await context.newPage();
   let playerResponse = null;
 
-  // Capture player JSON
+
   page.on("response", async (res) => {
     const url = res.url();
     if (url.includes("/youtubei/") && url.includes("player")) {
@@ -57,27 +61,23 @@ async function extractYouTubeAudioURL(videoId, cookieFilePath) {
     }
   });
 
-  // FIX 5: Force full desktop player
   await page.goto(
     `https://www.youtube.com/watch?v=${videoId}&disable_polymer=true&bpctr=9999999999`,
     { waitUntil: "networkidle", timeout: 45000 }
   );
 
-  // Uncomment for debugging
-  // console.log((await page.content()).slice(0, 600));
 
-  // Trigger playback
   try { await page.click("button.ytp-play-button"); } catch {}
 
   await page.waitForTimeout(3000);
 
-  // Fallback 1
+
   if (!playerResponse) {
     const init = await page.evaluate(() => window.ytInitialPlayerResponse || null);
     if (init?.streamingData) playerResponse = init;
   }
 
-  // Fallback 2
+
   if (!playerResponse) {
     const cfg = await page.evaluate(() => {
       try {

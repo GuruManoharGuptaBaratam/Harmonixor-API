@@ -17,7 +17,7 @@ async function searchVideoIdPlaywright(query) {
     waitUntil: "networkidle",
   });
 
-  // Extract first videoId from HTML
+
   const videoId = await page.evaluate(() => {
     const scripts = [...document.querySelectorAll("script")];
     for (const s of scripts) {
