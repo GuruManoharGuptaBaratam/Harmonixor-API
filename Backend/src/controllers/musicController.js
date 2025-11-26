@@ -31,7 +31,8 @@ async function handleSongSearch(req, res, songNameParam) {
       return res.status(400).json({ error: "Invalid song name" });
     }
 
-    const command = `yt-dlp --cookies "${tempCookiePath}" -f "bestaudio[ext=m4a]/bestaudio" --default-search "ytsearch" --get-title --get-thumbnail --get-url --sponsorblock-remove all "${songName} lyrical"`;
+
+    const command = `yt-dlp --cookies "${tempCookiePath}" -f "bestaudio[ext=m4a]/bestaudio" --default-search "ytsearch" --dump-json --sponsorblock-remove all "${songName} lyrical"`;
 
     exec(command, async (error, stdout, stderr) => {
       try {
@@ -48,10 +49,17 @@ async function handleSongSearch(req, res, songNameParam) {
         });
       }
 
-      const lines = stdout.trim().split("\n");
-      const title = lines[0] || "";
-      const songUrl = lines[1] || "";
-      const thumbnail = lines[2] || "";
+
+      let info;
+      try {
+        info = JSON.parse(stdout.trim());
+      } catch (jsonErr) {
+        return res.status(500).json({ error: "Failed to parse yt-dlp JSON" });
+      }
+
+      const title = info.title || "";
+      const songUrl = info.url || ""; 
+      const thumbnail = info.thumbnail || "";
 
       if (!songUrl) {
         return res.status(500).json({ error: "Failed to get song URL from yt-dlp" });
@@ -70,6 +78,7 @@ async function handleSongSearch(req, res, songNameParam) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 }
+
 
 async function handleSongStream(req, res, songUrlParam) {
 try {
