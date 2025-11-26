@@ -81,12 +81,35 @@ try {
       return res.status(400).json({ error: "Missing googlevideo URL" });
     }
 
-    console.log("Processing googlevideo…");
 
-    // Native fetch (Node 18+)
-    const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" }
+  console.log("FETCHING GOOGLEVIDEO:", url);
+
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)",
+      "Accept": "*/*",
+      "Referer": "https://www.youtube.com/",
+      "Origin": "https://www.youtube.com",
+      "Range": "bytes=0-" 
+    }
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "no body");
+    
+    console.log("\n====== GOOGLEVIDEO DEBUG ======");
+    console.log("URL:", url);
+    console.log("STATUS:", response.status);
+    console.log("HEADERS:", Object.fromEntries(response.headers.entries()));
+    console.log("BODY:", body);
+    console.log("=================================\n");
+
+    return res.status(500).json({
+      error: "GoogleVideo rejected the request",
+      status: response.status,
+      body
     });
+}
 
     if (!response.ok) {
       return res.status(500).json({ error: "Failed to fetch googlevideo audio" });
