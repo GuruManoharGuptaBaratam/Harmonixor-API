@@ -70,12 +70,32 @@ async function handleSongSearch(req, res, songNameParam) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 }
-function handleSongStream(req, res, songUrlParam) {
+
+async function handleSongStream(req, res, songUrlParam) {
   try {
     const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
     if (!songUrl) return res.status(400).json({ error: "URL missing" });
 
+    // 1️⃣ If googlevideo direct audio URL → proxy it using fetch()
+    if (songUrl.includes("googlevideo.com/videoplayback")) {
+      console.log("Direct googlevideo URL detected → proxying with fetch()");
 
+      const response = await fetch(songUrl);
+
+      if (!response.ok) {
+        return res.status(500).json({ error: "Failed to fetch googlevideo audio" });
+      }
+
+      // Set proper headers for streaming
+      res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mp4");
+      res.setHeader("Accept-Ranges", "bytes");
+
+      // Pipe the ReadableStream to Express response
+      response.body.pipe(res);
+      return;
+    }
+
+    // 2️⃣ If YouTube URL → use yt-dlp to extract fresh audio
     exec(`yt-dlp -f bestaudio -g "${songUrl}"`, (err, stdout, stderr) => {
       if (err) {
         console.error("yt-dlp error:", stderr);
@@ -85,10 +105,12 @@ function handleSongStream(req, res, songUrlParam) {
       const directAudioUrl = stdout.trim();
       res.json({ downloadUrl: directAudioUrl });
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
 }
+
 
 module.exports = { handleSongSearch, handleSongStream };
