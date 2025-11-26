@@ -49,27 +49,37 @@ async function handleSongSearch(req, res, songNameParam) {
 
 
 
-function handleSongStream(req, res, songUrlParam) {
+async function handleSongStream(req, res, songUrlParam) {
   try {
-        const videoId = songUrlParam || req.query.songUrl || req.body.songUrl;
+        const id = songUrlParam || req.query.songUrl || req.body.songUrl;
 
-        if (!videoId) return res.status(400).send("Missing video ID");
+        if (!id) return res.status(400).send("Missing YouTube video id");
+
+        const URL = `https://www.youtube.com/watch?v=${id}`;
+
+        const info = await ytdl.getInfo(URL);
 
         res.setHeader("Content-Type", "audio/mp4");
+        res.setHeader("Transfer-Encoding", "chunked"); // prevents buffering issues
 
-        ytdl(videoId, {
+        ytdl(URL, {
             filter: "audioonly",
             quality: "140",
             requestOptions: {
                 headers: {
-                    "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
+                    "User-Agent": "Mozilla/5.0",
                     "Referer": "https://www.youtube.com"
                 }
             }
-        }).pipe(res);
+        }).on("error", err => {
+            console.log("YTDL error:", err);
+            res.status(500).end("Stream error");
+        })
+        .pipe(res);
 
     } catch (err) {
-        res.status(500).send("Error: " + err.message);
+        console.log("SERVER ERROR:", err);
+        res.status(500).send("Streaming Error: " + err.message);
     }
 }
 
