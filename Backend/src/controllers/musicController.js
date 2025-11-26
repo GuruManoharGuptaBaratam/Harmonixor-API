@@ -2,6 +2,7 @@ const { exec, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
+import { chromium } from "playwright";
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
@@ -81,43 +82,91 @@ async function handleSongSearch(req, res, songNameParam) {
 
 
 async function handleSongStream(req, res, songUrlParam) {
+  const url = songUrlParam;
+
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📥 Incoming stream request");
+  console.log("GoogleVideo URL:", url);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  if (!url) {
+    console.log("❌ Missing URL");
+    return res.status(400).json({ error: "Missing URL" });
+  }
+
+  let browser;
+
   try {
-    const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
-    if (!songUrl) return res.status(400).json({ error: "URL missing" });
+    console.log("🚀 Launching Playwright browser...");
+    browser = await chromium.launch({
+      headless: true,
+      args: ["--disable-web-security", "--disable-features=IsolateOrigins"],
+    });
 
+    const context = await browser.newContext();
+    const page = await context.newPage();
 
-    if (songUrl.includes("googlevideo.com/videoplayback")) {
-      console.log("Direct googlevideo URL detected → proxying with fetch()");
+    console.log("🌐 Fetching googlevideo resource via browser…");
 
-      const response = await fetch(songUrl);
+    const response = await page.request.fetch(url);
 
-      if (!response.ok) {
-        return res.status(500).json({ error: "Failed to fetch googlevideo audio" });
-      }
+    console.log("📡 GoogleVideo Response Status:", response.status());
 
-
-      res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mp4");
-      res.setHeader("Accept-Ranges", "bytes");
-
-
-      response.body.pipe(res);
-      return;
+    if (!response.ok()) {
+      console.log("❌ GoogleVideo fetch failed:", response.status());
+      await browser.close();
+      return res.status(500).json({ error: "GoogleVideo fetch failed" });
     }
 
+    const headers = response.headers();
+    console.log("📦 GoogleVideo Headers:", headers);
 
-    exec(`yt-dlp -f bestaudio -g "${songUrl}"`, (err, stdout, stderr) => {
-      if (err) {
-        console.error("yt-dlp error:", stderr);
-        return res.status(500).json({ error: "Failed to get audio URL" });
-      }
+    console.log("📥 Obtaining readable stream from Playwright…");
+    const browserStream = await response.body();
 
-      const directAudioUrl = stdout.trim();
-      res.json({ downloadUrl: directAudioUrl });
+    // Start ffmpeg
+    console.log("🎧 Starting ffmpeg conversion...");
+    const ffmpeg = spawn("ffmpeg", [
+      "-loglevel", "debug",   // ⬅ debug mode ON
+      "-i", "pipe:0",
+      "-f", "mp3",
+      "-ab", "192k",
+      "-vn",
+      "pipe:1",
+    ]);
+
+    ffmpeg.on("error", (err) => {
+      console.log("❌ FFmpeg spawn failed:", err);
+    });
+
+    ffmpeg.stderr.on("data", (data) => {
+      console.log("🎙 FFmpeg DEBUG:", data.toString());
+    });
+
+    res.setHeader("Content-Type", "audio/mpeg");
+
+    console.log("🔁 Piping data: browser → ffmpeg → response");
+    browserStream.pipe(ffmpeg.stdin);
+    ffmpeg.stdout.pipe(res);
+
+    ffmpeg.on("close", (code) => {
+      console.log("🛑 FFmpeg closed with code:", code);
+      browser.close();
+      console.log("🧹 Browser closed.");
+    });
+
+    browserStream.on("error", (err) => {
+      console.log("❌ BrowserStream error:", err);
+    });
+
+    res.on("close", () => {
+      console.log("🚪 Client connection closed.");
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    console.log("💥 UNCAUGHT ERROR:", err);
+    if (browser) await browser.close();
+    return res.status(500).json({ error: err.message });
   }
 }
 
