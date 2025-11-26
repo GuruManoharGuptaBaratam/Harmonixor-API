@@ -49,39 +49,37 @@ async function handleSongSearch(req, res, songNameParam) {
 
 
 
-async function handleSongStream(req, res, songUrlParam) {
+async function handleSongStream(req, res) {
   try {
-        // Match your query parameter correctly
-        const id = songUrlParam || req.query.Song_url || req.body.Song_url;
+    const id = req.query.Song_url || req.body.Song_url;
 
-        if (!id || id.length !== 11) return res.status(400).send("Invalid YouTube video id");
+    if (!id || id.length !== 11)
+      return res.status(400).send("Invalid YouTube video id");
 
-        const URL = `https://www.youtube.com/watch?v=${id}`;
+    const url = `https://www.youtube.com/watch?v=${id}`;
 
-        const info = await ytdl.getInfo(URL); // optional, can be removed if not needed
+    res.setHeader("Content-Type", "audio/mp4");
+    res.setHeader("Transfer-Encoding", "chunked");
 
-        res.setHeader("Content-Type", "audio/mp4");
-        res.setHeader("Transfer-Encoding", "chunked"); // prevents buffering issues
-
-        ytdl(URL, {
-            filter: "audioonly",
-            quality: "140",
-            requestOptions: {
-                headers: {
-                    "User-Agent": "Mozilla/5.0",
-                    "Referer": "https://www.youtube.com"
-                }
-            }
-        }).on("error", err => {
-            console.log("YTDL error:", err);
-            res.status(500).end("Stream error");
-        })
-        .pipe(res);
-
-    } catch (err) {
-        console.log("SERVER ERROR:", err);
-        res.status(500).send("Streaming Error: " + err.message);
-    }
+    ytdl(url, {
+      filter: "audioonly",
+      quality: "140",
+      requestOptions: {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Referer": "https://www.youtube.com",
+        },
+      },
+    })
+      .on("error", (err) => {
+        console.error("YTDL error:", err);
+        res.status(500).end("Stream error");
+      })
+      .pipe(res);
+  } catch (err) {
+    console.error("SERVER ERROR:", err);
+    res.status(500).send("Streaming Error: " + err.message);
+  }
 }
 module.exports = { handleSongSearch, handleSongStream };
 
