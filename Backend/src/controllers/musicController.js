@@ -1,8 +1,9 @@
-const { exec, spawn } = require("child_process");
+const { exec } = require("child_process");
+const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
-import { chromium } from "playwright";
+const { chromium } = require("playwright");
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
