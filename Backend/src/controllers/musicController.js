@@ -2,7 +2,6 @@ const { exec, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
-import fetch from "node-fetch";
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
@@ -73,14 +72,18 @@ async function handleSongSearch(req, res, songNameParam) {
 }
 
 async function handleSongStream(req, res, songUrlParam) {
-  try {
-    const url = songUrlParam;
+try {
+    const url = decodeURIComponent(
+      songUrlParam || req.query.songUrl || req.body.songUrl
+    );
+;
     if (!url) {
       return res.status(400).json({ error: "Missing googlevideo URL" });
     }
 
-    console.log("Processing googlevideo URL…");
+    console.log("Processing googlevideo…");
 
+    // Native fetch (Node 18+)
     const response = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0" }
     });
@@ -89,10 +92,8 @@ async function handleSongStream(req, res, songUrlParam) {
       return res.status(500).json({ error: "Failed to fetch googlevideo audio" });
     }
 
-
     const fileName = `audio_${Date.now()}.mp3`;
     const filePath = path.join(process.cwd(), "tmp", fileName);
-
 
     const ffmpeg = spawn("ffmpeg", [
       "-i", "pipe:0",
@@ -104,29 +105,23 @@ async function handleSongStream(req, res, songUrlParam) {
       filePath
     ]);
 
-
     response.body.pipe(ffmpeg.stdin);
 
-    ffmpeg.stderr.on("data", data => {
-      console.log("FFmpeg:", data.toString());
-    });
+    ffmpeg.stderr.on("data", d => console.log("FFmpeg:", d.toString()));
 
     ffmpeg.on("close", () => {
-      console.log("Conversion complete:", fileName);
-
       const fileUrl = `${req.protocol}://${req.get("host")}/tmp/${fileName}`;
 
       return res.json({
         status: "success",
         audioUrl: fileUrl,
-        format: "mp3",
         message: "Audio ready to play"
       });
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 }
 
