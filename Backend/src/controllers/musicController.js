@@ -2,6 +2,7 @@ const { exec, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
+import fetch from "node-fetch";
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
@@ -71,64 +72,61 @@ async function handleSongSearch(req, res, songNameParam) {
   }
 }
 
-
-
-
 async function handleSongStream(req, res, songUrlParam) {
   try {
-    const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
-    if (!songUrl) return res.status(400).json({ error: "URL missing" });
+    const url = songUrlParam;
+    if (!url) {
+      return res.status(400).json({ error: "Missing googlevideo URL" });
+    }
 
+    console.log("Processing googlevideo URL…");
 
-    if (songUrl.includes("googlevideo.com/videoplayback")) {
-      console.log("Proxying googlevideo audio…");
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" }
+    });
 
-      const range = req.headers.range || "bytes=0-";  
-      console.log('url',songUrl) // flag -01 
-      const response = await fetch(songUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36",
-          "Accept": "*/*",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Sec-Fetch-Mode": "no-cors",
-          "Range": range, 
-          "Referer": "https://www.youtube.com/",
-          "Origin": "https://www.youtube.com/"
-        }
-      });
-
-      if (!response.ok) {
-        console.error("Googlevideo fetch failed:", response.status, response.statusText); //flag-02
-        return res.status(500).json({ error: "Failed to fetch googlevideo audio" , response}); // flag-03
-      }
-
-
-      res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mp4");
-      res.setHeader("Content-Length", response.headers.get("content-length"));
-      res.setHeader("Accept-Ranges", "bytes");
-      res.setHeader("Content-Range", response.headers.get("content-range") || "");
-      res.status(response.status);
-
-
-      response.body.pipe(res);
-      return;
+    if (!response.ok) {
+      return res.status(500).json({ error: "Failed to fetch googlevideo audio" });
     }
 
 
-    exec(`yt-dlp -f bestaudio -g "${songUrl}"`, (err, stdout, stderr) => {
-      if (err) {
-        console.error("yt-dlp error:", stderr);
-        return res.status(500).json({ error: "Failed to get audio URL" });
-      }
+    const fileName = `audio_${Date.now()}.mp3`;
+    const filePath = path.join(process.cwd(), "tmp", fileName);
 
-      const directAudioUrl = stdout.trim();
-      res.json({ downloadUrl: directAudioUrl });
+
+    const ffmpeg = spawn("ffmpeg", [
+      "-i", "pipe:0",
+      "-vn",
+      "-ac", "2",
+      "-ar", "44100",
+      "-b:a", "192k",
+      "-f", "mp3",
+      filePath
+    ]);
+
+
+    response.body.pipe(ffmpeg.stdin);
+
+    ffmpeg.stderr.on("data", data => {
+      console.log("FFmpeg:", data.toString());
+    });
+
+    ffmpeg.on("close", () => {
+      console.log("Conversion complete:", fileName);
+
+      const fileUrl = `${req.protocol}://${req.get("host")}/tmp/${fileName}`;
+
+      return res.json({
+        status: "success",
+        audioUrl: fileUrl,
+        format: "mp3",
+        message: "Audio ready to play"
+      });
     });
 
   } catch (err) {
-    console.error("Server error:", err);
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 }
 
