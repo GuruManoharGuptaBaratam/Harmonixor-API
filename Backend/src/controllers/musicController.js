@@ -82,121 +82,43 @@ async function handleSongSearch(req, res, songNameParam) {
 
 async function handleSongStream(req, res, songUrlParam) {
   try {
-
-    const APIKEY = req.apiKey;
-    if (!APIKEY) return res.status(401).json({ error: "API key missing" });
-
-
-    const user = await User.findOne({ where: { apiKey: APIKEY } });
-    if (!user) return res.status(403).json({ error: "Invalid API key" });
+    const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
+    if (!songUrl) return res.status(400).json({ error: "URL missing" });
 
 
-    const cookieBase64 = user.cookieFile;
-    if (!cookieBase64) return res.status(400).json({ error: "No cookie found for this user" });
+    if (songUrl.includes("googlevideo.com/videoplayback")) {
+      console.log("Direct googlevideo URL detected → proxying with fetch()");
 
+      const response = await fetch(songUrl);
 
-    const buffer = Buffer.from(cookieBase64, "base64");
-
-
-    const cookiesDir = path.join(__dirname, "../../UserCookies");
-    if (!fs.existsSync(cookiesDir)) {
-      fs.mkdirSync(cookiesDir, { recursive: true });
-    }
-
-    const tempCookiePath = path.join(cookiesDir, `temp_cookie_stream_${Date.now()}.txt`);
-    await fs.promises.writeFile(tempCookiePath, buffer);
-
-
-    const cookieText = buffer.toString();
-    const cookieHeader = cookieText
-      .split("\n")
-      .filter(line => !line.startsWith("#") && line.trim() !== "")
-      .map(line => {
-        const parts = line.split("\t");
-        const name = parts[5];
-        const value = parts[6];
-        return `${name}=${value}`;
-      })
-      .join("; ");
-
-
-    const url = decodeURIComponent(
-      songUrlParam || req.query.songUrl || req.body.songUrl
-    );
-
-    if (!url) {
-      return res.status(400).json({ error: "Missing googlevideo URL" });
-    }
-
-    console.log("FETCHING GOOGLEVIDEO WITH COOKIES:", url);
-
-
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "*/*",
-        "Referer": "https://www.youtube.com/",
-        "Origin": "https://www.youtube.com",
-        "Range": "bytes=0-",
-        "Cookie": cookieHeader
+      if (!response.ok) {
+        return res.status(500).json({ error: "Failed to fetch googlevideo audio" });
       }
-    });
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => "no body");
 
-      console.log("\n====== GOOGLEVIDEO DEBUG ======");
-      console.log("URL:", url);
-      console.log("STATUS:", response.status);
-      console.log("HEADERS:", Object.fromEntries(response.headers.entries()));
-      console.log("BODY:", body);
-      console.log("=================================\n");
+      res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mp4");
+      res.setHeader("Accept-Ranges", "bytes");
 
-      return res.status(500).json({
-        error: "GoogleVideo rejected the request",
-        status: response.status,
-        body
-      });
+
+      response.body.pipe(res);
+      return;
     }
 
 
-    const fileName = `audio_${Date.now()}.mp3`;
-    const filePath = path.join(process.cwd(), "tmp", fileName);
+    exec(`yt-dlp -f bestaudio -g "${songUrl}"`, (err, stdout, stderr) => {
+      if (err) {
+        console.error("yt-dlp error:", stderr);
+        return res.status(500).json({ error: "Failed to get audio URL" });
+      }
 
-    const ffmpeg = spawn("ffmpeg", [
-      "-i", "pipe:0",
-      "-vn",
-      "-ac", "2",
-      "-ar", "44100",
-      "-b:a", "192k",
-      "-f", "mp3",
-      filePath
-    ]);
-
-    response.body.pipe(ffmpeg.stdin);
-
-    ffmpeg.stderr.on("data", d => console.log("FFmpeg:", d.toString()));
-
-    ffmpeg.on("close", async () => {
-
-      try { await fs.promises.unlink(tempCookiePath); } catch {}
-
-      const fileUrl = `${req.protocol}://${req.get("host")}/tmp/${fileName}`;
-
-      return res.json({
-        status: "success",
-        audioUrl: fileUrl,
-        format: "mp3",
-        message: "Audio ready to play"
-      });
+      const directAudioUrl = stdout.trim();
+      res.json({ downloadUrl: directAudioUrl });
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: err.message });
   }
 }
-
-
 
 module.exports = { handleSongSearch, handleSongStream };
