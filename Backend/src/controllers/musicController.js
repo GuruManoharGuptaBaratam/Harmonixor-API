@@ -51,13 +51,14 @@ async function handleSongSearch(req, res, songNameParam) {
 
 async function handleSongStream(req, res, songUrlParam) {
   try {
-        const id = songUrlParam || req.query.songUrl || req.body.songUrl;
+        // Match your query parameter correctly
+        const id = songUrlParam || req.query.Song_url || req.body.Song_url;
 
-        if (!id) return res.status(400).send("Missing YouTube video id");
+        if (!id || id.length !== 11) return res.status(400).send("Invalid YouTube video id");
 
         const URL = `https://www.youtube.com/watch?v=${id}`;
 
-        const info = await ytdl.getInfo(URL);
+        const info = await ytdl.getInfo(URL); // optional, can be removed if not needed
 
         res.setHeader("Content-Type", "audio/mp4");
         res.setHeader("Transfer-Encoding", "chunked"); // prevents buffering issues
@@ -82,6 +83,5 @@ async function handleSongStream(req, res, songUrlParam) {
         res.status(500).send("Streaming Error: " + err.message);
     }
 }
-
 module.exports = { handleSongSearch, handleSongStream };
 
