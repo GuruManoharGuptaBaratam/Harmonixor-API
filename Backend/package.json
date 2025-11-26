@@ -24,7 +24,8 @@
     "pg-hstore": "^2.3.4",
     "playwright": "^1.56.1",
     "sequelize": "^6.37.7",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
