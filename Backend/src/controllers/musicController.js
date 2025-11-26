@@ -1,9 +1,7 @@
-const { exec } = require("child_process");
+const { exec, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
-const searchVideoId = require("../utils/searchVideoIdPlaywright");
-const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
 
 async function handleSongSearch(req, res, songNameParam) {
   try {
@@ -13,41 +11,65 @@ async function handleSongSearch(req, res, songNameParam) {
     const user = await User.findOne({ where: { apiKey: APIKEY } });
     if (!user) return res.status(403).json({ error: "Invalid API key" });
 
-    // if (!user.cookieFile)
-    //   return res.status(400).json({ error: "User has no cookie uploaded" });
+    const cookieBase64 = user.cookieFile;
+    if (!cookieBase64) return res.status(400).json({ error: "No cookie found for this user" });
 
-    // const cookiesDir = path.join(__dirname, "../../UserCookies");
-    // if (!fs.existsSync(cookiesDir)) fs.mkdirSync(cookiesDir, { recursive: true });
+    const buffer = Buffer.from(cookieBase64, "base64");
 
-    // const tempCookiePath = path.join(cookiesDir, `cookie_${Date.now()}.txt`);
-    // const buffer = Buffer.from(user.cookieFile, "base64");
-    // fs.writeFileSync(tempCookiePath, buffer);
+    const cookiesDir = path.join(__dirname, "../../UserCookies");
+    if (!fs.existsSync(cookiesDir)) {
+      fs.mkdirSync(cookiesDir, { recursive: true });
+    }
+
+    const tempCookiePath = path.join(cookiesDir, `temp_cookie_${Date.now()}.txt`);
+    await fs.promises.writeFile(tempCookiePath, buffer);
 
     const songName = songNameParam || req.query.song || req.body.songName;
-    if (!songName) return res.status(400).json({ error: "Invalid song name" });
 
-  
-    const videoId = await searchVideoId(songName);
+    if (!songName || typeof songName !== "string") {
+      await fs.promises.unlink(tempCookiePath);
+      return res.status(400).json({ error: "Invalid song name" });
+    }
 
+    const command = `yt-dlp --cookies "${tempCookiePath}" -f "bestaudio[ext=m4a]/bestaudio" --default-search "ytsearch" --get-title --get-thumbnail --get-url --sponsorblock-remove all "${songName} lyrical"`;
 
-    // const audioUrl = await extractYouTubeAudioURL(videoId, tempCookiePath);
+    exec(command, async (error, stdout, stderr) => {
+      try {
+        await fs.promises.unlink(tempCookiePath);
+      } catch (unlinkErr) {
+        console.error("Failed to delete temp cookie:", unlinkErr);
+      }
 
+      if (error || !stdout) {
+        console.error("yt-dlp error:", error || stderr);
+        return res.status(500).json({
+          error: "Error extracting media",
+          details: stderr || error.message,
+        });
+      }
 
-    // try { fs.unlinkSync(tempCookiePath); } catch {}
+      const lines = stdout.trim().split("\n");
+      const title = lines[0] || "";
+      const songUrl = lines[1] || "";
+      const thumbnail = lines[2] || "";
 
-    return res.status(200).json({
-      title: songName,
-      videoId
+      if (!songUrl) {
+        return res.status(500).json({ error: "Failed to get song URL from yt-dlp" });
+      }
+
+      const streamUrl = encodeURIComponent(songUrl);
+
+      res.status(200).json({
+        title,
+        thumbnail,
+        streamUrl,
+      });
     });
-
   } catch (err) {
-    console.error("handleSongSearch failed:", err);
-    return res.status(500).json({ error: "Extraction failed", details: err.message });
+    console.error("handleSongSearch error:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 }
-
-
-
 function handleSongStream(req, res, songUrlParam) {
   try {
     const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
@@ -70,4 +92,3 @@ function handleSongStream(req, res, songUrlParam) {
 }
 
 module.exports = { handleSongSearch, handleSongStream };
-
