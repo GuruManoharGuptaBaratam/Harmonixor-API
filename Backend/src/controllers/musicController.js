@@ -49,10 +49,10 @@ async function handleSongSearch(req, res, songNameParam) {
 
 
 
-async function handleSongStream(req, res) {
+async function handleSongStream(req, res,songUrlParam) {
   try {
-    const id = req.query.Song_url || req.body.Song_url;
-
+    const id = songUrlParam || req.query.song || req.body.songName;
+    console.log(id)
     if (!id || id.length !== 11)
       return res.status(400).send("Invalid YouTube video id");
 
