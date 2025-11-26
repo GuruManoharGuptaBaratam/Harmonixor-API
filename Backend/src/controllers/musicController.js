@@ -71,31 +71,51 @@ async function handleSongSearch(req, res, songNameParam) {
   }
 }
 
+
+
+
 async function handleSongStream(req, res, songUrlParam) {
   try {
     const songUrl = songUrlParam || req.query.songUrl || req.body.songUrl;
     if (!songUrl) return res.status(400).json({ error: "URL missing" });
 
-    // 1️⃣ If googlevideo direct audio URL → proxy it using fetch()
-    if (songUrl.includes("googlevideo.com/videoplayback")) {
-      console.log("Direct googlevideo URL detected → proxying with fetch()");
 
-      const response = await fetch(songUrl);
+    if (songUrl.includes("googlevideo.com/videoplayback")) {
+      console.log("Proxying googlevideo audio…");
+
+      const range = req.headers.range || "bytes=0-";  
+      console.log('url',songUrl) // flag -01 
+      const response = await fetch(songUrl, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36",
+          "Accept": "*/*",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Sec-Fetch-Mode": "no-cors",
+          "Range": range, 
+          "Referer": "https://www.youtube.com/",
+          "Origin": "https://www.youtube.com/"
+        }
+      });
 
       if (!response.ok) {
-        return res.status(500).json({ error: "Failed to fetch googlevideo audio" });
+        console.error("Googlevideo fetch failed:", response.status, response.statusText); //flag-02
+        return res.status(500).json({ error: "Failed to fetch googlevideo audio" , response}); // flag-03
       }
 
-      // Set proper headers for streaming
-      res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mp4");
-      res.setHeader("Accept-Ranges", "bytes");
 
-      // Pipe the ReadableStream to Express response
+      res.setHeader("Content-Type", response.headers.get("content-type") || "audio/mp4");
+      res.setHeader("Content-Length", response.headers.get("content-length"));
+      res.setHeader("Accept-Ranges", "bytes");
+      res.setHeader("Content-Range", response.headers.get("content-range") || "");
+      res.status(response.status);
+
+
       response.body.pipe(res);
       return;
     }
 
-    // 2️⃣ If YouTube URL → use yt-dlp to extract fresh audio
+
     exec(`yt-dlp -f bestaudio -g "${songUrl}"`, (err, stdout, stderr) => {
       if (err) {
         console.error("yt-dlp error:", stderr);
@@ -107,7 +127,7 @@ async function handleSongStream(req, res, songUrlParam) {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Server error:", err);
     res.status(500).json({ error: err.message });
   }
 }
