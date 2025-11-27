@@ -12,6 +12,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
 import Background from "./components/Background";
+import Player from "./pages/Player";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/player" element={<Player />} />
         </Routes>
         <Footer/>
       </div>

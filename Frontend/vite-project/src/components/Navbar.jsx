@@ -14,7 +14,7 @@ function Navbar({ profileName = "User" }) {
       try {
         const token = localStorage.getItem("token");
 
-        const protectedRoutes = ["/dashboard", "/profile"];
+        const protectedRoutes = ["/dashboard", "/profile","/player"];
         if (!token && protectedRoutes.includes(location.pathname)) {
           navigate("/login");
           return;
@@ -58,6 +58,7 @@ function Navbar({ profileName = "User" }) {
         <Link to="/docs">Docs</Link>
         <Link to="/dashboard">Dashboard</Link>
         {!userExisist && <Link to="/login">Login</Link>}
+        <Link to="/player">Player</Link>
         <Link to="/profile" className="profile-name">
           {"{"}
           {profileName}

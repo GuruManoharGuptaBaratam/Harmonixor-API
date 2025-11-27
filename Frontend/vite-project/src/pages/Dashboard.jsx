@@ -15,7 +15,6 @@ function Dashboard() {
   const [copied, setCopied] = useState(false);
 
   const [cookieUploaded, setCookieUploaded] = useState(false); 
-  console.log(import.meta.env.VITE_API_URL)
   useEffect(() => {
       async function fetchUser() {
         try {
