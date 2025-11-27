@@ -55,7 +55,7 @@ async function handleSongSearch(req, res, songNameParam) {
     // 5. SPAWN yt-dlp (with extractor-args to bypass SABR 403)
     const ytdlpArgs = [
       "--cookies", tempCookiePath,
-      "--extractor-args", "youtube:player_client=android",
+      "--extractor-args", "youtube:player_client=web_creator",
       "--default-search", "ytsearch",
       "--no-playlist",
       "-f", "bestaudio[ext=m4a]/bestaudio",
