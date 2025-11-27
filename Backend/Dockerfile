@@ -24,6 +24,7 @@ RUN apt-get update \
 # Install yt-dlp
 RUN pip3 install yt-dlp
 RUN ln -s /usr/local/bin/yt-dlp /usr/bin/yt-dlp
+FROM mcr.microsoft.com/playwright:latest
 
 # Install Playwright
 RUN npm install -g playwright
