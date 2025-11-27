@@ -9,7 +9,7 @@ const ytdl = require("ytdl-core");
 
 async function handleSongSearch(req, res, songNameParam) {
 
-async function handleSongSearch(req, res) {
+
   try {
 
     const APIKEY = req.apiKey;
@@ -30,7 +30,7 @@ async function handleSongSearch(req, res) {
     await fs.promises.writeFile(tempCookiePath, buffer);
 
 
-    const songName = req.query.song || req.body.songName;
+    const songName = songNameParam || req.query.song || req.body.songName;
     if (!songName || typeof songName !== "string") {
       await fs.promises.unlink(tempCookiePath);
       return res.status(400).json({ error: "Invalid song name" });
@@ -107,7 +107,7 @@ async function handleSongSearch(req, res) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 }
-}
+
 
 
 
