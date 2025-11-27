@@ -20,20 +20,26 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 
-RUN pip3 install yt-dlp
-RUN ln -s /usr/local/bin/yt-dlp /usr/bin/yt-dlp
+RUN pip3 install yt-dlp && ln -s /usr/local/bin/yt-dlp /usr/bin/yt-dlp
 
-
-RUN npm install -g playwright && playwright install chromium
 
 WORKDIR /app
 
+
 COPY package*.json ./
+
+
 RUN npm install
+
+
+RUN npx playwright install --with-deps chromium
+
 
 COPY . .
 
-EXPOSE 5432
+
+EXPOSE 5000
+
 
 CMD ["npm", "start"]
 
