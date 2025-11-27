@@ -1,12 +1,12 @@
 const { exec } = require("child_process");
 const { spawn } = require("child_process");
-const fs = require("fs");
-const path = require("path");
+// const fs = require("fs");
+// const path = require("path");
 const User = require("../models/User");
-const searchVideoId = require("../utils/searchVideoIdPlaywright");
-const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
-const ytdl = require("ytdl-core");
-const FFMPEG_PATH = "ffmpeg";
+const searchVideoIdPlaywright = require("../utils/searchVideoIdPlaywright");
+// const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
+// const ytdl = require("ytdl-core");
+// const FFMPEG_PATH = "ffmpeg";
 
 
 async function handleSongSearch(req, res, songNameParam) {
@@ -31,7 +31,7 @@ try {
     if (!songName) return res.status(400).json({ error: "Invalid song name" });
 
   
-    const videoId = await searchVideoId(songName);
+    const videoId = await searchVideoIdPlaywright(songName);
 
 
     // const audioUrl = await extractYouTubeAudioURL(videoId, tempCookiePath);
