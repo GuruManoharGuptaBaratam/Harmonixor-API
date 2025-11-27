@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install yt-dlp
 RUN ln -s /usr/local/bin/yt-dlp /usr/bin/yt-dlp
-
+RUN apt-get update && apt-get install -y ffmpeg
 
 RUN npm install -g playwright && playwright install chromium
 

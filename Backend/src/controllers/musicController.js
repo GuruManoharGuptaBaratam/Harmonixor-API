@@ -6,6 +6,7 @@ const User = require("../models/User");
 const searchVideoId = require("../utils/searchVideoIdPlaywright");
 const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
 const ytdl = require("ytdl-core");
+const FFMPEG_PATH = "/opt/homebrew/bin/ffmpeg"
 
 async function handleSongSearch(req, res, songNameParam) {
 
@@ -51,7 +52,7 @@ async function handleSongSearch(req, res, songNameParam) {
     ]);
 
 
-    const ffmpeg = spawn("ffmpeg", [
+    const ffmpeg = spawn(FFMPEG_PATH, [
       "-i", "pipe:0",
       "-vn",
       "-f", "mp3",
