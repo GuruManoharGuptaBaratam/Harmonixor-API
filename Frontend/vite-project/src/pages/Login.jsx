@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
 import "./Login.css";
-import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
 
 const Login = ({ onLogin }) => {

@@ -1,25 +1,46 @@
 process.env.TMPDIR = "/tmp";
 
+const express = require('express');
 const app = require("./app");
-const express = require('express')
-const PORT = process.env.PORT || 3003;
-const sequelize = require('./models/db');
-const User = require('./models/User');
 const cors = require("cors");
+const sequelize = require('./models/db');
 
-app.use(cors());
+const PORT = process.env.PORT || 5000;
+
+
+app.use(cors({
+  origin: [
+    "http://localhost:5432",      
+    "https://harmonixor-api-pcfs.vercel.app"  
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.get("/checkBackend",(req,res)=>{
-  res.json({message: "Backend Server is Running !!!"})
-})
-app.use(cors({
-  origin: 'https://harmonixor-api-pcfs.vercel.app', 
-  credentials: true
-}));
-
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.get("/checkBackend", (req, res) => {
+  res.json({ message: "Backend Server is Running !!!" });
 });
+
+
+async function start() {
+  try {
+    await sequelize.authenticate();
+    console.log("✅ PostgreSQL connected successfully");
+
+    await sequelize.sync();
+    console.log("-- Database & tables synced successfully");
+
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("❌ Error starting server:", err);
+    process.exit(1);
+  }
+}
+
+start();

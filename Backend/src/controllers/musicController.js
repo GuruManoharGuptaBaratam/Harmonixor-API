@@ -53,57 +53,7 @@ try {
 
 async function handleSongStream(req, res,songUrlParam) {
 const videoId = songUrlParam || req.query.songUrl || req.body.songUrl;
-  if (!videoId) {
-    return res.status(400).json({ error: "videoId is required" });
-  }
-  const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  // 1. Use yt-dlp to get a fresh backend-valid audio URL (itag 140 = m4a)
-  const ytdlp = spawn("yt-dlp", ["-g", "-f", "140", youtubeUrl]);
-  let audioUrl = "";
-  ytdlp.stdout.on("data", (data) => {
-    audioUrl += data.toString();
-  });
-  ytdlp.stderr.on("data", (data) => {
-    console.error("yt-dlp error:", data.toString());
-  });
-  ytdlp.on("close", (code) => {
-    if (code !== 0 || !audioUrl.trim()) {
-      return res.status(500).json({ error: "Failed to get audio URL" });
-    }
-    audioUrl = audioUrl.trim(); // this is the googlevideo URL — for server use only
-    // 2. Stream it to the client
-    res.setHeader("Content-Type", "audio/mp4");
-    https
-      .get(audioUrl, (streamRes) => {
-        if (streamRes.statusCode !== 200) {
-          console.error("Googlevideo status:", streamRes.statusCode);
-          res.status(streamRes.statusCode).end("Failed to fetch audio");
-          return;
-        }
-        streamRes.pipe(res);
-      })
-      .on("error", (err) => {
-        console.error("Streaming error:", err);
-        res.status(500).end("Streaming error");
-      });
-  });
-  
-}
-function getAudioUrl(videoUrl) {
-  return new Promise((resolve, reject) => {
-    exec(`yt-dlp -g -f 140 "${videoUrl}"`, (err, stdout, stderr) => {
-      if (err) return reject(err);
-      resolve(stdout.trim());
-    });
-  });
-}
-function convertToMp3(inputUrl, outputFile) {
-  return new Promise((resolve, reject) => {
-    exec(`ffmpeg -i "${inputUrl}" -vn -acodec libmp3lame "${outputFile}"`, (err) => {
-      if (err) return reject(err);
-      resolve(outputFile);
-    });
-  });
+
 }
 module.exports = { handleSongSearch, handleSongStream };
 
