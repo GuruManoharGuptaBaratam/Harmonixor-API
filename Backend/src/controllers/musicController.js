@@ -6,7 +6,8 @@ const User = require("../models/User");
 const searchVideoId = require("../utils/searchVideoIdPlaywright");
 const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
 const ytdl = require("ytdl-core");
-const FFMPEG_PATH = "/opt/homebrew/bin/ffmpeg"
+const FFMPEG_PATH = "ffmpeg";
+
 
 async function handleSongSearch(req, res, songNameParam) {
 
