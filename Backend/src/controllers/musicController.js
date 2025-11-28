@@ -1,13 +1,11 @@
 const { exec } = require("child_process");
 const { spawn } = require("child_process");
-// const fs = require("fs");
-// const path = require("path");
+const fs = require("fs");
+const path = require("path");
 const User = require("../models/User");
+const axios = require('axios')
 const searchVideoIdPlaywright = require("../utils/searchVideoIdPlaywright");
-// const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
-// const ytdl = require("ytdl-core");
-// const FFMPEG_PATH = "ffmpeg";
-
+const { chromium } = require("playwright");
 
 async function handleSongSearch(req, res, songNameParam) {
 try {
@@ -51,9 +49,18 @@ try {
 }
 
 
-async function handleSongStream(req, res,songUrlParam) {
-const videoId = songUrlParam || req.query.songUrl || req.body.songUrl;
+async function handleSongStream(req, res, songUrlParam) {
+  const id = songUrlParam || req.query.songUrl;
+  const url = `https://www.youtube.com/watch?v=${id}`;
 
+  exec(`yt-dlp -g "${url}"`, (err, stdout) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    const [videoUrl, audioUrl] = stdout.trim().split("\n");
+
+    res.json({ videoUrl, audioUrl });
+  });
 }
+
 module.exports = { handleSongSearch, handleSongStream };
 

@@ -5,12 +5,12 @@ const app = require("./app");
 const cors = require("cors");
 const sequelize = require('./models/db');
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.LOCAL_PORT || 5000;
 
 
 app.use(cors({
   origin: [
-    "http://localhost:5432",      
+    "http://localhost:3000",      
     "https://harmonixor-api-pcfs.vercel.app"  
   ],
   credentials: true
