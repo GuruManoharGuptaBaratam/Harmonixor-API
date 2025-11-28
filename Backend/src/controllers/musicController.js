@@ -53,7 +53,7 @@ async function handleSongStream(req, res, songUrlParam) {
   const id = songUrlParam || req.query.songUrl;
   const url = `https://www.youtube.com/watch?v=${id}`;
 
-  exec(`yt-dlp --youtube-client TVHTML5 --no-check-certificates -g "https://www.youtube.com/watch?v=${id}"`, (err, stdout) => {
+  exec(`yt-dlp --extractor-args "youtube:player_client=tv" -g "https://www.youtube.com/watch?v=${id}"`, (err, stdout) => {
     if (err) return res.status(500).json({ error: err.message });
 
     const [videoUrl, audioUrl] = stdout.trim().split("\n");
