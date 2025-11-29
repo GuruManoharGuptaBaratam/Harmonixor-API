@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef , useEffect} from "react";
 import "./Player.css";
 
 export default function Player() {
@@ -9,16 +9,18 @@ export default function Player() {
   const [results, setResults] = useState([]);
 
   const [audioUrl, setAudioUrl] = useState("");
-  // const [isPlaying, setIsPlaying] = useState(false);
+
 
   const audioRef = useRef(null);
 
   const [loadingState, setLoadingState] = useState("");
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
-  // error flags
+
   const [searchError, setSearchError] = useState(false);
   const [streamError, setStreamError] = useState(false);
+  const [filteredResults, setFilteredResults] = useState([]);
+
 
   const handleSongSearch = async () => {
     if (!songQuery || !apiKey) {
@@ -36,7 +38,7 @@ export default function Player() {
     try {
 
       const searchRes = await fetch(
-        `https://harmonixor-api-r.onrender.com/harmonixor/songs/search?KEY=${apiKey}&Song_name=${songQuery}`
+        `${import.meta.env.VITE_API_URL}harmonixor/songs/search?KEY=${apiKey}&Song_name=${songQuery}`
       );
 
 
@@ -67,7 +69,7 @@ export default function Player() {
 
 
       const streamRes = await fetch(
-        `https://harmonixor-api-r.onrender.com/harmonixor/songs/stream?KEY=${apiKey}&Song_url=${videoID}`
+        `${import.meta.env.VITE_API_URL}harmonixor/songs/stream?KEY=${apiKey}&Song_url=${videoID}`
       );
 
 
@@ -100,7 +102,7 @@ export default function Player() {
         if (audioRef.current) {
 
           audioRef.current.play();
-          // setIsPlaying(true);
+
 
           setLoadingState("Song is playing ");
           setIsButtonLoading(false);
@@ -117,43 +119,54 @@ export default function Player() {
     }
   };
 
-  // const togglePlayback = () => {
-  //   console.log("🎛 Toggle Playback Clicked");
-  //   if (!audioRef.current) {
-  //     console.log("⚠ No audioRef found");
-  //     return;
-  //   }
-
-  //   if (isPlaying) {
-  //     console.log("⏸ Pausing audio");
-  //     audioRef.current.pause();
-  //     setIsPlaying(false);
-  //   } else {
-  //     console.log("▶ Playing audio");
-  //     audioRef.current.play();
-  //     setIsPlaying(true);
-  //   }
-  // };
-
-  const fetchPage = (page) => {
 
 
-    fetch(`/api/music/demo?page=${page}`)
-      .then(() => {
+const fetchPage = async (page) => {
+  try {
 
-        setCurrentPage(page);
-        setResults([`Song result from page ${page}`]);
-      })
-      .catch((err) => {
-        console.error( err);
-      });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}harmonixor/api/demo-songs?page=${page}`);
+    const data = await res.json();
+
+    setCurrentPage(page);
+    setResults(data.songs); 
+    setFilteredResults(data.songs);  
+  } catch (err) {
+    console.error( err);
+  }
+};
+  useEffect(() => {
+    fetchPage(1);
+  }, []);
+
+
+  const handleNext = () => {
+    if (currentPage < 4) {
+      fetchPage(currentPage + 1);
+    }
   };
-
-  const handleNext = () => fetchPage(currentPage + 1);
   const handlePrev = () => {
-    if (currentPage > 1) fetchPage(currentPage - 1);
+    if (currentPage > 1) {
+      fetchPage(currentPage - 1);
+    }
   };
 
+  const handleSearchFilter = (value) => {
+  setSearchQuery(value);
+
+  if (!value.trim()) {
+    setFilteredResults(results);
+    return;
+  }
+
+  const filtered = results.filter(song =>
+    song.title.toLowerCase().includes(value.toLowerCase()) ||
+    song.artist.toLowerCase().includes(value.toLowerCase())
+  );
+
+  setFilteredResults(filtered);
+
+  
+};
   return (
     <div className="player-container">
       <div className="player-wrapper">
@@ -214,15 +227,6 @@ export default function Player() {
             <h3 className="song-name">{audioUrl ? `{${songQuery}}` : "{Song Name Will Appear Here}"}</h3>
           </div>
 
-          {/* <div className="controls-box">
-            <button className="control-btn">⏮</button>
-
-            <button className="control-btn" onClick={togglePlayback}>
-              {isPlaying ? "⏸" : "▶"}
-            </button>
-
-            <button className="control-btn">⏭</button>
-          </div> */}
 
           {audioUrl && (
             <audio
@@ -235,14 +239,14 @@ export default function Player() {
         </div>
 
         <div className="player-box">
-          <h2 className="player-title">Music Demo Search</h2>
+          <h2 className="player-title">Test Bench</h2>
 
           <input
             type="text"
             placeholder="Search demo music..."
             className="player-input"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchFilter(e.target.value)}
           />
 
           <div className="pagination-box">
@@ -259,11 +263,46 @@ export default function Player() {
           </div>
 
           <div className="results-display">
-            <h4>Current Page: {currentPage}</h4>
-            {results.map((item, index) => (
-              <p key={index}>{item}</p>
-            ))}
-          </div>
+           
+          {filteredResults.length === 0 ? (
+            <p className="no-results">No results found</p>
+          ) : (
+            filteredResults.map((item, index) => (
+              <div key={index} className="song-vertical-card">
+
+                <div className="accent-strip"></div>
+
+                <div className="song-thumbnail">
+                  <svg
+                    className="thumb-svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  >
+                    <path d="M3 12h2"></path>
+                    <path d="M7 10h2"></path>
+                    <path d="M11 14h2"></path>
+                    <path d="M15 8h2"></path>
+                    <path d="M19 12h2"></path>
+                  </svg>
+                </div>
+
+                <div className="song-info">
+                  <div className="song-title">{item.title}</div>
+                  <div className="song-artist">{item.artist}</div>
+                </div>
+
+              </div>
+            ))
+          )}
+
+             
+        </div>
+        
         </div>
 
       </div>

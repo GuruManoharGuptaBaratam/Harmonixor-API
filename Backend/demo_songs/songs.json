@@ -1,0 +1,22 @@
+[
+  { "id": 1, "title": "Kabira", "artist": "Arijit Singh, Harshdeep Kaur" },
+  { "id": 2, "title": "Channa Mereya", "artist": "Arijit Singh" },
+  { "id": 3, "title": "Tum Hi Ho", "artist": "Arijit Singh" },
+  { "id": 4, "title": "Kun Faya Kun", "artist": "A.R. Rahman, Javed Ali, Mohit Chauhan" },
+  { "id": 5, "title": "Kesariya", "artist": "Arijit Singh" },
+  { "id": 6, "title": "Tere Bina", "artist": "A.R. Rahman, Chinmayee" },
+  { "id": 7, "title": "Kal Ho Naa Ho", "artist": "Sonu Nigam" },
+  { "id": 8, "title": "Tujh Mein Rab Dikhta Hai", "artist": "Roopkumar Rathod" },
+  { "id": 9, "title": "Tum Se Hi", "artist": "Mohit Chauhan" },
+  { "id": 10, "title": "Kunwara", "artist": "Divine" },
+  { "id": 11, "title": "Jai Ho", "artist": "A.R. Rahman, Sukhwinder Singh" },
+  { "id": 12, "title": "Dil Diyan Gallan", "artist": "Atif Aslam" },
+  { "id": 13, "title": "Maa Tujhe Salaam", "artist": "A.R. Rahman" },
+  { "id": 14, "title": "Tera Yaar Hoon Main", "artist": "Arijit Singh" },
+  { "id": 15, "title": "Ae Dil Hai Mushkil (Title Track)", "artist": "Arijit Singh" },
+   { "id": 16, "title": "Samajavaragamana", "artist": "Sid Sriram" },
+  { "id": 17, "title": "Inkem Inkem Inkem Kaavaale", "artist": "Sid Sriram" },
+  { "id": 18, "title": "Butta Bomma", "artist": "Armaan Malik" },
+  { "id": 19, "title": "Naatu Naatu", "artist": "Rahul Sipligunj, Kaala Bhairava" },
+  { "id": 20, "title": "Srivalli", "artist": "Sid Sriram" }
+]

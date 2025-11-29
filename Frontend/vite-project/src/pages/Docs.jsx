@@ -12,6 +12,7 @@ const Docs = () => {
             <li><a href="#usage">▸ Authentication</a></li>
             <li><a href="#routes">▸ API Routes</a></li>
             <li><a href="#examples">▸ Examples</a></li>
+            <li><a href="#player">▸ Player Usage</a></li>
             <li><a href="#cookies">▸ Cookie Setup & Dashboard</a></li>
             <li><a href="#security">▸ Security & Reliability</a></li>
             <li><a href="#download">▸ Download MP3 (Demo)</a></li>
@@ -21,205 +22,230 @@ const Docs = () => {
         </aside>
 
         <main className="docs-content">
+
+          {/* INTRO */}
           <section id="intro">
             <h1 className="title_docs">Harmonixor API Documentation</h1>
             <p>
-              The <strong>Harmonixor API</strong> provides developers with a simple and secure way
-              to <strong>search</strong> for songs and <strong>stream</strong> them directly.  
-              Designed to be lightweight yet powerful, it enables integration into apps, websites,
-              or personal projects where music playback is required.
+              The <strong>Harmonixor API</strong> lets developers easily <strong>search</strong> songs and securely
+              <strong>stream</strong> audio using YouTube-based IDs.  
+              This API powers the <strong>Harmonixor Player</strong> and can be integrated into any app requiring
+              audio playback or dynamic song fetching.
             </p>
           </section>
 
+          {/* AUTH */}
           <section id="usage">
             <h2>Authentication</h2>
             <p>
               All endpoints require an <strong>API key</strong>.  
-              You can obtain your key from the <code>Profile</code> page after signing up.  
-              Include the key either as:
+              Retrieve yours from the <code>Profile</code> page after logging in.
             </p>
 
+            <p>Send the key like this:</p>
             <pre className="code">{`GET /songs/search?KEY=YOUR_API_KEY&Song_name=Hello`}</pre>
 
             <p>Or via headers:</p>
             <pre className="code">{`Authorization: Bearer YOUR_API_KEY`}</pre>
           </section>
 
+          {/* ROUTES */}
           <section id="routes">
             <h2>API Routes</h2>
 
             <h3>1. Search Songs</h3>
             <p>
-              Use this endpoint to search for songs by keyword.  
-              Returns metadata like <strong>title</strong>, <strong>thumbnail</strong>, and a <strong>streamId</strong>.
+              Searches for a song on YouTube and returns a <strong>title</strong>,
+              <strong>thumbnail</strong>, and a <strong>videoId</strong>.  
+              Use this <strong>videoId</strong> in the streaming route.
             </p>
             <pre className="code">{`GET /songs/search?KEY=YOUR_API_KEY&Song_name={song_name}`}</pre>
 
             <h3>2. Stream Songs</h3>
             <p>
-              Once you have the <code>streamId</code> from the search route,  
-              call the stream endpoint to retrieve playable audio URLs.
+              Use the <code>videoId</code> obtained from the search route to request a playable audio URL.  
+              <strong>IMPORTANT:</strong> You must now provide <code>videoId</code> instead of a raw Song_url.
             </p>
-            <pre className="code">{`GET /songs/stream?KEY=YOUR_API_KEY&Song_url={streamId}`}</pre>
+            <pre className="code">{`GET /songs/stream?KEY=YOUR_API_KEY&Song_url={videoId}`}</pre>
           </section>
 
+          {/* EXAMPLES */}
           <section id="examples">
             <h2>Examples</h2>
+
             <p>Search for a song:</p>
             <pre className="code">{`curl -X GET "https://harmonixor-api-1.onrender.com/harmonixor/songs/search?KEY=YOUR_API_KEY&Song_name=Shape of You"`}</pre>
 
             <p>Sample response:</p>
             <pre className="code">{`{
-              "title": "Shape of You",
-              "thumbnail": "https://img.coverimage.com/...",
-              "streamId": "abc123{rawID}"
-            }`}</pre>
+  "title": "Shape of You",
+  "thumbnail": "https://img.example.com/...jpg",
+  "videoId": "4Bsc2uI_LsM"
+}`}</pre>
 
-            <p>Fetch the stream:</p>
-            <pre className="code">{`curl -X GET "https://harmonixor-api-1.onrender.com/songs/stream?KEY=YOUR_API_KEY&Song_url=abc123"`}</pre>
+            <p>Use the returned <code>videoId</code> to fetch the audio stream:</p>
+            <pre className="code">{`curl -X GET "https://harmonixor-api-1.onrender.com/harmonixor/songs/stream?KEY=YOUR_API_KEY&Song_url=4Bsc2uI_LsM"`}</pre>
           </section>
 
+          {/* PLAYER SECTION (NEW) */}
+          <section id="player">
+            <h2>Player Usage</h2>
+            <p>
+              The Harmonixor Player (available inside your dashboard) allows you to
+              <strong> test </strong> any song using a direct integration with the API.
+            </p>
+
+            <h3>How it works:</h3>
+            <ol>
+              <li>
+                Enter a song name in the <strong>Song Search</strong> field inside the Player.
+              </li>
+              <li>
+                The player calls:  
+                <pre className="code">{`/songs/search?KEY=API_KEY&Song_name={your_song}`}</pre>
+              </li>
+              <li>
+                The response contains a <strong>videoId</strong>.  
+                This ID is automatically used for streaming:
+                <pre className="code">{`/songs/stream?KEY=API_KEY&Song_url={videoId}`}</pre>
+              </li>
+              <li>
+                Once the audio URL is returned, the player:
+                <ul>
+                  <li>Displays the song name</li>
+                  <li>Shows animated visual thumbnail</li>
+                  <li>Loads the audio</li>
+                  <li>Starts playback automatically</li>
+                </ul>
+              </li>
+            </ol>
+
+            <h3>Testing Demo Songs</h3>
+            <p>
+              In the <strong>Test Bench</strong> section of the player, you can browse paginated demo tracks.  
+              Selecting a demo track shows its details and allows you to manually copy the title.
+            </p>
+
+            <h3>Error Handling</h3>
+            <ul>
+              <li><strong>music ID not found</strong> → “No videoId found”</li>
+              <li><strong>stream error</strong> → “Failed to load song”</li>
+              <li><strong>automatic button animation</strong> indicates loading state</li>
+            </ul>
+          </section>
+
+          {/* COOKIES */}
           <section id="cookies">
             <h2>Cookie Setup & Dashboard</h2>
             <p>
-              Some streaming requests require cookies for authentication.  
-              To make this easy, we support uploading a <code>cookies.txt</code> file.
+              Some YouTube streaming requests require browser cookies.  
+              The API supports uploading your <code>cookies.txt</code> file to improve reliability.
             </p>
 
             <h3>Step 1 — Download the extension</h3>
             <p>
-              Install the <a href="" target="_blank" rel="noreferrer">HarmoSync Extension</a> browser extension.
+              Install the <a href="" target="_blank" rel="noreferrer">HarmoSync Extension</a>.
             </p>
-            <p>Read the Chrome extension <a href="#extension">docs</a></p>
 
             <h3>Step 2 — Export your cookies</h3>
-            <p>
-              Open the music site in your browser, click the extension icon, and export cookies.  
-              This will download a file named <code>cookies.txt</code>.
-            </p>
+            <p>Use the extension to export cookies from YouTube or your music site.</p>
 
             <h3>Step 3 — Upload in dashboard</h3>
             <p>
-              Go to the <strong>Dashboard</strong> in your Harmonixor account.  
-              Upload the <code>cookies.txt</code> file under <strong>Cookie Manager</strong>.  
-              Once uploaded, the API will use it automatically for requests.
+              Upload <code>cookies.txt</code> inside the Dashboard → Cookie Manager.
             </p>
           </section>
 
+          {/* SECURITY */}
           <section id="security">
             <h2>Security & Reliability Features</h2>
             <p>
-              The Harmonixor API includes several features to make your integration stable and secure:
+              The Harmonixor API includes several stability mechanisms:
             </p>
             <ul>
-              <li><strong>Retries</strong>: If a request fails due to temporary issues, the API retries it automatically in the background.</li>
-              <li><strong>User-Agent Headers</strong>: Every request includes safe browser-like headers to reduce blocking by music providers.</li>
-              <li><strong>Rate Limiting</strong>: To protect from abuse and ensure fair use, requests are capped at <strong>1000/day per key</strong>. Exceeding this will temporarily block further calls.</li>
+              <li><strong>Automatic Retries</strong> for intermittent failures</li>
+              <li><strong>Safe Headers</strong> to reduce YouTube blocking</li>
+              <li><strong>1000 req/day</strong> rate limit per key</li>
             </ul>
-            <p>
-              These measures ensure reliable streaming while keeping the system fair and secure for all users.
-            </p>
           </section>
 
+          {/* DOWNLOAD */}
           <section id="download">
             <h2>Download MP3 (Demo)</h2>
             <p>
-              ⚠️ Officially, the API is <strong>stream-only</strong>.  
-              But here’s a <strong>demo</strong> showing how you could trigger a song download in MP3 format.
+              ⚠️ Officially the API is <strong>stream-only</strong>.  
+              The following script is a <strong>demo</strong> showing how you could download an MP3 from an audio stream URL.
             </p>
 
             <pre className="code">{`async function downloadSong() {
-            const apiKey = "YOUR_API_KEY";
-            const songUrl = "abc123"; // streamId from search
+  const apiKey = "YOUR_API_KEY";
+  const videoId = "4Bsc2uI_LsM"; // from search route
 
-            const response = await fetch(
-              \`https://harmonixor-api-1.onrender.com/harmonixor/songs/stream?KEY=\${apiKey}&Song_url=\${songUrl}\`
-            );
+  const response = await fetch(
+    \`https://harmonixor-api-1.onrender.com/harmonixor/songs/stream?KEY=\${apiKey}&Song_url=\${videoId}\`
+  );
 
-            if (!response.ok) {
-              throw new Error("Failed to fetch stream");
-            }
+  if (!response.ok) throw new Error("Failed to fetch stream");
 
-            // Convert stream into a blob
-            const blob = await response.blob();
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
 
-            // Create a download link
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "song.mp3"; // file name
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "song.mp3";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}`}</pre>
 
-            console.log("Song download started");
-          }
-
-          downloadSong().catch(console.error);`}</pre>
-
-            <p>
-              This snippet will download the song as <code>song.mp3</code> directly in the browser.  
-              In a real app, you can add constraints like limiting file size, setting timeouts,  
-              or restricting downloads to authorized users.
-            </p>
           </section>
 
-          <section id="faq">
-            <h2>FAQs</h2>
-
-            <p><strong>Q:</strong> <span className="ques">Do I need an API key?</span><br />
-            <strong>A:</strong> Yes. Every request must include your personal API key.</p>
-
-            <p><strong>Q:</strong> <span className="ques">Can I download songs?</span><br />
-            <strong>A:</strong> No. The API is strictly for streaming purposes.</p>
-
-            <p><strong>Q:</strong> <span className="ques">What are the rate limits?</span><br />
-            <strong>A:</strong> By default, <strong>1000 requests/day per key</strong>. Contact support for extensions.</p>
-
-            <p><strong>Q:</strong> <span className="ques">Is it free to use?</span><br />
-            <strong>A:</strong> Yes, but usage is monitored and subject to fair use policy.</p>
-          </section>
-
+          {/* EXTENSION */}
           <section id="extension">
             <h1>Chrome Extension Usage</h1>
             <p>
-              The Harmonixor Chrome Extension helps you easily export cookies and automate streaming requests.  
-              You can <strong>download the extension ZIP</strong> and load it as an unpacked extension in Chrome.
+              Use the HarmoSync extension to export cookies and automate streaming authentication.
             </p>
 
             <h2>Step 1 — Download the ZIP</h2>
             <p>
-              Click here to download the extension ZIP: <a href="../extensionFile/HarmoSync.zip" download>Download HarmoSync Extension</a>  
+              <a href="../extensionFile/HarmoSync.zip" download>Download HarmoSync Extension</a>
             </p>
 
             <h2>Step 2 — Load as Unpacked</h2>
             <p>
-              <p>1. Open Chrome and go to <code>chrome://extensions/</code>  </p>
-              <p>2. Enable <strong>Developer mode</strong> (top-right)  </p>
-              <p>3. Click <strong>Load unpacked</strong> and select the extracted extension folder</p>
+              <p>1. Open <code>chrome://extensions/</code></p>
+              <p>2. Enable <strong>Developer mode</strong></p>
+              <p>3. Click <strong>Load unpacked</strong> and select the extracted folder</p>
             </p>
+
             <img src="../assets/Load_unpack_demo.png" alt="Load Unpacked Example" />
-       
 
-            <h2>Step 3 — Automate Cookie Extraction</h2>
+            <h2>Step 3 — Automatic Cookie Extraction</h2>
             <p>
-              <p>1. Open the music site in Chrome  </p>
-              <p>2. Click the extension icon  </p>
-              <p>3. Check <strong>Automate Extraction</strong> checkbox to start automatic cookie export  </p>
-              <p>4. A success message will appear when automation is successful</p>
-            </p>
-            <img src="../assets/Success_extension_demo.png" alt="Automation Success" />
-
-
-            <p>
-              You can stop automation anytime by unchecking the <strong>Automate Extraction</strong> option.
+              <p>1. Visit the music site</p>
+              <p>2. Click the extension icon</p>
+              <p>3. Enable <strong>Automate Extraction</strong></p>
             </p>
 
-            <h2>Step 4 — Manual Extraction</h2>
-            <p>
-              If you prefer, you can manually export cookies using the extension and upload the <code>cookies.txt</code> file in your Harmonixor dashboard.  
-            </p>
+            <img src="../assets/Success_extension_demo.png" alt="Success" />
+          </section>
 
+          {/* FAQ */}
+          <section id="faq">
+            <h2>FAQs</h2>
+
+            <p><strong>Q:</strong> Do I need an API key?<br/>
+            <strong>A:</strong> Yes, all endpoints require an API key.</p>
+
+            <p><strong>Q:</strong> Can I download songs?<br/>
+            <strong>A:</strong> No. Streams only.</p>
+
+            <p><strong>Q:</strong> What are the rate limits?<br/>
+            <strong>A:</strong> 1000 requests/day</p>
+
+            <p><strong>Q:</strong> Is it free?<br/>
+            <strong>A:</strong> Yes, under Fair Use Policy.</p>
           </section>
 
         </main>
