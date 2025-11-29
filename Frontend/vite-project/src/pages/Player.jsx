@@ -9,11 +9,16 @@ export default function Player() {
   const [results, setResults] = useState([]);
 
   const [audioUrl, setAudioUrl] = useState("");
-  const [isPlaying, setIsPlaying] = useState(false);
+  // const [isPlaying, setIsPlaying] = useState(false);
 
   const audioRef = useRef(null);
 
+  const [loadingState, setLoadingState] = useState("");
+  const [isButtonLoading, setIsButtonLoading] = useState(false);
 
+  // error flags
+  const [searchError, setSearchError] = useState(false);
+  const [streamError, setStreamError] = useState(false);
 
   const handleSongSearch = async () => {
     if (!songQuery || !apiKey) {
@@ -21,63 +26,127 @@ export default function Player() {
       return;
     }
 
+
+
+    setLoadingState("Searching for music ID...");
+    setIsButtonLoading(true);
+    setSearchError(false);
+    setStreamError(false);
+
     try {
 
       const searchRes = await fetch(
         `https://harmonixor-api-r.onrender.com/harmonixor/songs/search?KEY=${apiKey}&Song_name=${songQuery}`
       );
+
+
+
+      if (!searchRes.ok) {
+
+        setSearchError(true);
+        setLoadingState("Error: Unable to fetch Music ID");
+        setIsButtonLoading(false);
+        return;
+      }
+
       const searchData = await searchRes.json();
 
+
       if (!searchData || !searchData.videoId) {
-        alert("No videoId found from search.");
+
+        setSearchError(true);
+        setLoadingState("Failed to load song");
+        setIsButtonLoading(false);
         return;
       }
 
       const videoID = searchData.videoId;
 
 
+      setLoadingState("Music ID found ");
+
 
       const streamRes = await fetch(
         `https://harmonixor-api-r.onrender.com/harmonixor/songs/stream?KEY=${apiKey}&Song_url=${videoID}`
       );
+
+
+
+      if (!streamRes.ok) {
+
+        setStreamError(true);
+        setLoadingState("Error: Unable to load stream URL");
+        setIsButtonLoading(false);
+        return;
+      }
+
       const streamData = await streamRes.json();
+
+
+      if (!streamData || !streamData.videoUrl) {
+
+        setStreamError(true);
+        setLoadingState("Failed to load song");
+        setIsButtonLoading(false);
+        return;
+      }
 
       setAudioUrl(streamData.videoUrl);
 
+
+      setLoadingState("Audio is loading...");
+
       setTimeout(() => {
         if (audioRef.current) {
+
           audioRef.current.play();
-          setIsPlaying(true);
+          // setIsPlaying(true);
+
+          setLoadingState("Song is playing ");
+          setIsButtonLoading(false);
+        } else {
+          console.log("⚠ audioRef.current is null");
         }
-      }, 200);
+      }, 400);
 
     } catch (err) {
       console.error(err);
-      alert("Something went wrong while fetching.");
+      setLoadingState("Failed to load song");
+      setIsButtonLoading(false);
+      setSearchError(true);
     }
   };
 
+  // const togglePlayback = () => {
+  //   console.log("🎛 Toggle Playback Clicked");
+  //   if (!audioRef.current) {
+  //     console.log("⚠ No audioRef found");
+  //     return;
+  //   }
 
-  const togglePlayback = () => {
-    if (!audioRef.current) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
-  };
-
+  //   if (isPlaying) {
+  //     console.log("⏸ Pausing audio");
+  //     audioRef.current.pause();
+  //     setIsPlaying(false);
+  //   } else {
+  //     console.log("▶ Playing audio");
+  //     audioRef.current.play();
+  //     setIsPlaying(true);
+  //   }
+  // };
 
   const fetchPage = (page) => {
+
+
     fetch(`/api/music/demo?page=${page}`)
       .then(() => {
+
         setCurrentPage(page);
         setResults([`Song result from page ${page}`]);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error( err);
+      });
   };
 
   const handleNext = () => fetchPage(currentPage + 1);
@@ -89,10 +158,8 @@ export default function Player() {
     <div className="player-container">
       <div className="player-wrapper">
 
-
         <div className="player-box">
           <h2 className="player-title">Music Player</h2>
-
 
           <div className="api-row">
             <input
@@ -111,10 +178,18 @@ export default function Player() {
             />
           </div>
 
-          <button className="player-button" onClick={handleSongSearch}>
-            Search & Play
+          <button
+            className={`player-button ${isButtonLoading ? "loading" : ""}`}
+            onClick={handleSongSearch}
+            disabled={isButtonLoading}
+          >
+            <span>{isButtonLoading ? "Loading..." : "Search & Play"}</span>
           </button>
 
+          <div className="loading-msg">{loadingState}</div>
+
+          {searchError && <div className="error-msg">Failed to fetch Music ID</div>}
+          {streamError && <div className="error-msg">Failed to fetch Audio Stream</div>}
 
           <div className="cover-box">
             <div className="cover-image-area">
@@ -123,9 +198,6 @@ export default function Player() {
                 width="48"
                 height="48"
                 viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-                focusable="false"
               >
                 <rect x="3" y="7" width="2" height="10" rx="0.3" fill="#fff" opacity="0.95" />
                 <rect x="8" y="5" width="2" height="14" rx="0.3" fill="#fff" opacity="0.95" />
@@ -138,13 +210,11 @@ export default function Player() {
             </div>
           </div>
 
-
           <div className="song-name-box">
-            <h3 className="song-name">{audioUrl ? songQuery : "{Song Name Will Appear Here}"}</h3>
+            <h3 className="song-name">{audioUrl ? `{${songQuery}}` : "{Song Name Will Appear Here}"}</h3>
           </div>
 
-
-          <div className="controls-box">
+          {/* <div className="controls-box">
             <button className="control-btn">⏮</button>
 
             <button className="control-btn" onClick={togglePlayback}>
@@ -152,8 +222,7 @@ export default function Player() {
             </button>
 
             <button className="control-btn">⏭</button>
-          </div>
-
+          </div> */}
 
           {audioUrl && (
             <audio
@@ -164,7 +233,6 @@ export default function Player() {
             />
           )}
         </div>
-
 
         <div className="player-box">
           <h2 className="player-title">Music Demo Search</h2>
