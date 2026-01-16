@@ -112,4 +112,4 @@ async function signup(req, res) {
 
 
 
-module.exports = { generateKey,login, signup};
+module.exports = { generateKey,login, signup}
