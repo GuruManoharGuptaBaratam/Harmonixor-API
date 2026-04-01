@@ -9,6 +9,7 @@ const User = sequelize.define('User', {
   cookieFile: { type: DataTypes.TEXT, allowNull: true }
 }, {
   tableName: 'users',
+  freezeTableName: true,
   timestamps: false,
   indexes: [
     {

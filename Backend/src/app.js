@@ -25,13 +25,13 @@ app.use("/harmonixor/extension",extensionRouter)
 app.use("/harmonixor/api", demoSongsRoute);
 
 
-sequelize.sync({ alter: true })
-  .then(() => {
-    console.log('-- Database & tables synced successfully');
-  })
-  .catch(err => {
-    console.error('-- Error syncing database:', err);
-  });
+// sequelize.sync({ alter: true })
+//   .then(() => {
+//     console.log('-- Database & tables synced successfully');
+//   })
+//   .catch(err => {
+//     console.error('-- Error syncing database:', err);
+//   });
 const path = require("path");
 
 module.exports = app;

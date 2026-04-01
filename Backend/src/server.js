@@ -30,8 +30,8 @@ async function start() {
     await sequelize.authenticate();
     console.log("✅ PostgreSQL connected successfully");
 
-    await sequelize.sync();
-    console.log("-- Database & tables synced successfully");
+    await sequelize.sync()
+    console.log("✅ Database synced successfully");
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
