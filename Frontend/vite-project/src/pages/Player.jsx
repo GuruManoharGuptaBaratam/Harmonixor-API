@@ -2,6 +2,12 @@ import React, { useState, useRef , useEffect} from "react";
 import "./Player.css";
 
 export default function Player() {
+  const TRUSTED_AUDIO_TYPES = new Set([
+    "audio/mp4",
+    "audio/webm",
+    "application/vnd.apple.mpegurl",
+  ]);
+
   const [songQuery, setSongQuery] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,7 +106,8 @@ export default function Player() {
       }
 
       setAudioUrl(resolvedAudioUrl);
-      setAudioMimeType(streamData?.mimeType || "");
+      const nextMimeType = streamData?.mimeType || "";
+      setAudioMimeType(TRUSTED_AUDIO_TYPES.has(nextMimeType) ? nextMimeType : "");
       setLoadingState("Audio is loading...");
 
     } catch (err) {

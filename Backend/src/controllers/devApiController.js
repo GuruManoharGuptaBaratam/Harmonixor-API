@@ -1,4 +1,4 @@
-const {handleSongSearch, handleSongStream} = require("./musicController")
+const {handleSongSearch, handleSongStream, handleSongProxy} = require("./musicController")
 async function handleDevApiSearchURL(req,res){
     try{
 
@@ -22,4 +22,15 @@ async function handleDevApiStreamURL(req,res){
     }
 
 }
-module.exports = {handleDevApiSearchURL,handleDevApiStreamURL}
+async function handleDevApiProxyURL(req,res){
+    try{
+        await handleSongProxy(req, res);
+    }catch(err){
+        console.error(err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Failed to proxy audio stream" });
+        }
+    }
+
+}
+module.exports = {handleDevApiSearchURL,handleDevApiStreamURL,handleDevApiProxyURL}

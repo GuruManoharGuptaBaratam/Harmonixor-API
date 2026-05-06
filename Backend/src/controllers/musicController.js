@@ -1,7 +1,9 @@
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { pipeline } = require("stream/promises");
 const User = require("../models/User");
+const axios = require("axios");
 const searchVideoIdPlaywright = require("../utils/searchVideoIdPlaywright");
 const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
 const { decodeCookieTextFromStorage } = require("../utils/cookieStorage");
@@ -9,10 +11,116 @@ const { decodeCookieTextFromStorage } = require("../utils/cookieStorage");
 const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
 const YT_DLP_BINARY = process.env.YT_DLP_BINARY || "yt-dlp";
 const BROWSER_SAFE_AUDIO_FORMAT =
-  "bestaudio[ext=m4a]/bestaudio[ext=mp4]/bestaudio[acodec*=mp4a]/bestaudio/best";
+  "140/141/bestaudio[ext=m4a]/bestaudio[ext=mp4]/bestaudio[acodec*=mp4a]/bestaudio/best";
+const FORWARDED_RESPONSE_HEADERS = [
+  "content-type",
+  "content-length",
+  "content-range",
+  "accept-ranges",
+  "cache-control",
+  "etag",
+  "last-modified",
+  "content-disposition",
+];
 
 function validateYouTubeVideoId(videoId) {
   return YOUTUBE_ID_PATTERN.test(String(videoId || "").trim());
+}
+
+function encodeSourceUrl(value) {
+  return Buffer.from(String(value), "utf8").toString("base64url");
+}
+
+function decodeSourceUrl(value) {
+  return Buffer.from(String(value), "base64url").toString("utf8");
+}
+
+function getPublicBaseUrl(req) {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const protocol = forwardedProto || req.protocol || "https";
+  const host = forwardedHost || req.get("host");
+  return `${protocol}://${host}`;
+}
+
+function buildProxyUrl(req, sourceUrl) {
+  const params = new URLSearchParams({
+    KEY: req.apiKey,
+    source: encodeSourceUrl(sourceUrl),
+  });
+
+  return `${getPublicBaseUrl(req)}/harmonixor/songs/proxy?${params.toString()}`;
+}
+
+function inferMimeType(audioUrl, ext, fallbackMimeType = "audio/mpeg") {
+  const normalizedExt = String(ext || "").toLowerCase();
+  const decodedUrl = decodeURIComponent(audioUrl);
+
+  if (
+    normalizedExt === "m4a" ||
+    normalizedExt === "mp4" ||
+    normalizedExt.includes("mp4") ||
+    normalizedExt.includes("m4a")
+  ) {
+    return "audio/mp4";
+  }
+
+  if (normalizedExt === "webm" || normalizedExt.includes("webm")) {
+    return "audio/webm";
+  }
+
+  if (audioUrl.includes(".m3u8") || decodedUrl.includes("mime=application/vnd.apple.mpegurl")) {
+    return "application/vnd.apple.mpegurl";
+  }
+
+  if (
+    audioUrl.includes("mime=audio%2Fmp4") ||
+    decodedUrl.includes("mime=audio/mp4")
+  ) {
+    return "audio/mp4";
+  }
+
+  if (
+    audioUrl.includes("itag=140") ||
+    audioUrl.includes("itag=141") ||
+    decodedUrl.includes("itag=140") ||
+    decodedUrl.includes("itag=141")
+  ) {
+    return "audio/mp4";
+  }
+
+  if (
+    audioUrl.includes("mime=audio%2Fwebm") ||
+    decodedUrl.includes("mime=audio/webm")
+  ) {
+    return "audio/webm";
+  }
+
+  if (
+    audioUrl.includes("mime=audio%2Fmpeg") ||
+    decodedUrl.includes("mime=audio/mpeg")
+  ) {
+    return "audio/mpeg";
+  }
+
+  return fallbackMimeType;
+}
+
+function rewritePlaylistToProxy(req, playlistText, sourceUrl) {
+  const source = new URL(sourceUrl);
+  const lines = playlistText.split(/\r?\n/);
+
+  return lines
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) {
+        return line;
+      }
+
+      const absoluteUrl = new URL(trimmed, source).toString();
+      return buildProxyUrl(req, absoluteUrl);
+    })
+    .join("\n");
 }
 
 function runProcess(command, args, options = {}) {
@@ -110,11 +218,7 @@ async function extractStreamUrlsWithYtDlp(videoId, cookieFilePath) {
   }
 
   const normalizedExt = (audioExt || ext || "").toLowerCase();
-  const mimeType = normalizedExt === "m4a" || normalizedExt === "mp4"
-    ? "audio/mp4"
-    : normalizedExt === "webm"
-      ? "audio/webm"
-      : "audio/mpeg";
+  const mimeType = inferMimeType(audioUrl, normalizedExt);
 
   return {
     videoUrl,
@@ -193,18 +297,25 @@ async function handleSongStream(req, res, songUrlParam) {
 
   try {
     const ytDlpResult = await extractStreamUrlsWithYtDlp(id, tempCookiePath);
-    return res.json(ytDlpResult);
+    return res.json({
+      ...ytDlpResult,
+      upstreamUrl: ytDlpResult.streamUrl,
+      streamUrl: buildProxyUrl(req, ytDlpResult.streamUrl),
+    });
   } catch (ytDlpError) {
     console.error("yt-dlp stream extraction failed:", ytDlpError.message);
 
     try {
       const audioUrl = await extractYouTubeAudioURL(id, tempCookiePath);
+      const mimeType = inferMimeType(audioUrl, "", "audio/mp4");
+
       return res.json({
         videoUrl: null,
         audioUrl,
-        streamUrl: audioUrl,
+        streamUrl: buildProxyUrl(req, audioUrl),
         provider: "playwright",
-        mimeType: "audio/mp4",
+        mimeType,
+        upstreamUrl: audioUrl,
       });
     } catch (fallbackError) {
       console.error("Playwright stream fallback failed:", fallbackError.message);
@@ -223,4 +334,80 @@ async function handleSongStream(req, res, songUrlParam) {
   }
 }
 
-module.exports = { handleSongSearch, handleSongStream };
+async function handleSongProxy(req, res) {
+  const source = req.query.source;
+  const requestedMimeType = req.query.mimeType;
+
+  if (!source) {
+    return res.status(400).json({ error: "Missing media source" });
+  }
+
+  let upstreamUrl;
+  try {
+    upstreamUrl = decodeSourceUrl(source);
+  } catch (error) {
+    return res.status(400).json({ error: "Invalid media source" });
+  }
+
+  try {
+    const upstreamResponse = await axios.get(upstreamUrl, {
+      responseType: "stream",
+      validateStatus: null,
+      headers: {
+        Range: req.headers.range,
+        "User-Agent":
+          req.headers["user-agent"] ||
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+        Accept: req.headers.accept || "*/*",
+      },
+      maxRedirects: 5,
+      timeout: 45000,
+    });
+
+    const upstreamContentType =
+      requestedMimeType ||
+      upstreamResponse.headers["content-type"] ||
+      "application/octet-stream";
+
+    if (upstreamContentType.includes("mpegurl") || upstreamUrl.includes(".m3u8")) {
+      const chunks = [];
+      for await (const chunk of upstreamResponse.data) {
+        chunks.push(Buffer.from(chunk));
+      }
+
+      const playlistBody = Buffer.concat(chunks).toString("utf8");
+      const rewrittenPlaylist = rewritePlaylistToProxy(req, playlistBody, upstreamUrl);
+
+      res.status(upstreamResponse.status);
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store");
+      return res.send(rewrittenPlaylist);
+    }
+
+    res.status(upstreamResponse.status);
+    for (const headerName of FORWARDED_RESPONSE_HEADERS) {
+      const headerValue = upstreamResponse.headers[headerName];
+      if (headerValue) {
+        res.setHeader(headerName, headerValue);
+      }
+    }
+
+    if (requestedMimeType) {
+      res.setHeader("Content-Type", requestedMimeType);
+    }
+
+    res.setHeader("Cache-Control", "no-store");
+    await pipeline(upstreamResponse.data, res);
+  } catch (error) {
+    console.error("Media proxy failed:", error.message);
+    if (!res.headersSent) {
+      return res.status(502).json({
+        error: "Failed to proxy media stream",
+        details: error.message,
+      });
+    }
+    res.destroy(error);
+  }
+}
+
+module.exports = { handleSongSearch, handleSongStream, handleSongProxy };
