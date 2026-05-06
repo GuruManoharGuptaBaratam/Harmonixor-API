@@ -1,6 +1,7 @@
 const express = require("express")
 const router = express.Router()
 const User = require('../models/User');
+const { normalizeCookieForStorage } = require("../utils/cookieStorage");
 
 
 router.post("/validate", async (req, res) => {
@@ -51,8 +52,7 @@ router.post("/save-cookie", async (req, res) => {
     if (user.apiKey !== apiKey) {
       return res.status(401).json({ success: false, error: "invalid_api_key" });
     }
-
-    user.cookieFile = cookie; 
+    user.cookieFile = normalizeCookieForStorage(cookie);
     await user.save();
 
     res.status(200).json({ success: true, message: "Cookie saved successfully" });

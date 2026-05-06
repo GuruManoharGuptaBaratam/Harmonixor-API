@@ -1,1 +1,32 @@
+# Environment variables / secrets
 .env
+.env.*
+
+# Node modules
+node_modules/
+
+# Build folders
+dist/
+build/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Temporary files
+tmp/
+temp/
+UserCookies/
+
+# Python cache (if using Python tools like yt-dlp scripts)
+__pycache__/
+*.pyc

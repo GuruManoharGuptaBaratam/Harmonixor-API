@@ -1,7 +1,9 @@
 const User = require('../models/User');
 
 async function apiKeyAuth(req, res, next) {
-  const apiKey = req.query.KEY; 
+  const authHeader = req.headers.authorization || "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+  const apiKey = req.query.KEY || req.headers["x-api-key"] || bearerToken;
   if (!apiKey) return res.status(401).json({ error: "API key missing" });
 
   try {

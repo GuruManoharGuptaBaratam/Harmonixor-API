@@ -1,4 +1,4 @@
-FROM node:18-bullseye
+FROM node:20-bullseye
 
 
 RUN apt-get update && apt-get install -y \
@@ -23,13 +23,16 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install yt-dlp && ln -s /usr/local/bin/yt-dlp /usr/bin/yt-dlp
 
 
+ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 WORKDIR /app
 
 
 COPY package*.json ./
 
 
-RUN npm install
+RUN npm ci --omit=dev
 
 
 RUN npx playwright install --with-deps chromium
@@ -42,4 +45,3 @@ EXPOSE 5000
 
 
 CMD ["npm", "start"]
-

@@ -2,6 +2,7 @@ const express = require("express");
 const { login, signup} = require("../controllers/userController");
 const { authenticateToken } = require("../middleware/Authenticate");
 const User = require('../models/User');
+const { normalizeCookieForStorage } = require("../utils/cookieStorage");
 
 const router = express.Router();
 
@@ -40,8 +41,7 @@ router.post("/upload-cookie", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-
-    user.cookieFile = cookieBase64;
+    user.cookieFile = normalizeCookieForStorage(cookieBase64);
     await user.save();
 
     res.status(200).json({ message: "Cookie uploaded successfully", uploaded: true });

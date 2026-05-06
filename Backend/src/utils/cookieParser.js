@@ -1,14 +1,24 @@
 const fs = require("fs");
 
-function parseNetscapeCookies(filePath) {
-  const text = fs.readFileSync(filePath, "utf8");
+function resolveCookieText(input) {
+  if (!input) return "";
+  if (fs.existsSync(input)) {
+    return fs.readFileSync(input, "utf8");
+  }
+  return String(input);
+}
+
+function parseNetscapeCookies(input) {
+  const text = resolveCookieText(input);
   const lines = text.split(/\r?\n/);
   const cookies = [];
 
   for (const line of lines) {
-    if (!line || line.startsWith("#")) continue;
+    if (!line) continue;
+    if (line.startsWith("#") && !line.startsWith("#HttpOnly_")) continue;
 
-    const parts = line.split(/\t/);
+    const sanitizedLine = line.replace(/^#HttpOnly_/, "");
+    const parts = sanitizedLine.split(/\t/);
     if (parts.length < 7) continue;
 
     const [
@@ -27,7 +37,7 @@ function parseNetscapeCookies(filePath) {
       domain: domain.replace(/^\./, ""),
       path,
       expires: expiry === "0" ? undefined : Number(expiry),
-      httpOnly: false,
+      httpOnly: line.startsWith("#HttpOnly_"),
       secure: secureFlag === "TRUE",
     });
   }

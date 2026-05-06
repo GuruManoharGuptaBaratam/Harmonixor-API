@@ -85,7 +85,10 @@ export default function Player() {
       const streamData = await streamRes.json();
 
 
-      if (!streamData || !streamData.videoUrl) {
+      const resolvedAudioUrl =
+        streamData?.audioUrl || streamData?.streamUrl || streamData?.videoUrl;
+
+      if (!resolvedAudioUrl) {
 
         setStreamError(true);
         setLoadingState("Failed to load song");
@@ -93,23 +96,8 @@ export default function Player() {
         return;
       }
 
-      setAudioUrl(streamData.videoUrl);
-
-
+      setAudioUrl(resolvedAudioUrl);
       setLoadingState("Audio is loading...");
-
-      setTimeout(() => {
-        if (audioRef.current) {
-
-          audioRef.current.play();
-
-
-          setLoadingState("Song is playing ");
-          setIsButtonLoading(false);
-        } else {
-          console.log("⚠ audioRef.current is null");
-        }
-      }, 400);
 
     } catch (err) {
       console.error(err);
@@ -118,6 +106,42 @@ export default function Player() {
       setSearchError(true);
     }
   };
+
+  useEffect(() => {
+    if (!audioUrl || !audioRef.current) return;
+
+    const audioElement = audioRef.current;
+
+    const handleCanPlay = async () => {
+      try {
+        await audioElement.play();
+        setLoadingState("Song is playing ");
+      } catch (err) {
+        console.error("Audio playback failed:", err);
+        setStreamError(true);
+        setLoadingState("Failed to play audio stream");
+      } finally {
+        setIsButtonLoading(false);
+      }
+    };
+
+    const handleError = () => {
+      console.error("Audio element failed to load:", audioElement.error);
+      setStreamError(true);
+      setLoadingState("Unsupported or invalid audio stream");
+      setIsButtonLoading(false);
+    };
+
+    audioElement.pause();
+    audioElement.load();
+    audioElement.addEventListener("canplay", handleCanPlay, { once: true });
+    audioElement.addEventListener("error", handleError, { once: true });
+
+    return () => {
+      audioElement.removeEventListener("canplay", handleCanPlay);
+      audioElement.removeEventListener("error", handleError);
+    };
+  }, [audioUrl]);
 
 
 

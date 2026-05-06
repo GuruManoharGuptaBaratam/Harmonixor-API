@@ -1,28 +1,126 @@
-const { exec } = require("child_process");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const User = require("../models/User");
-const axios = require('axios')
 const searchVideoIdPlaywright = require("../utils/searchVideoIdPlaywright");
-const { chromium } = require("playwright");
+const extractYouTubeAudioURL = require("../utils/playwrightExtractor");
+const { decodeCookieTextFromStorage } = require("../utils/cookieStorage");
+
+const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+const YT_DLP_BINARY = process.env.YT_DLP_BINARY || "yt-dlp";
+
+function validateYouTubeVideoId(videoId) {
+  return YOUTUBE_ID_PATTERN.test(String(videoId || "").trim());
+}
+
+function runProcess(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      ...options,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ code, stdout, stderr }));
+  });
+}
+
+async function searchVideoIdWithYtDlp(songName) {
+  const args = [
+    "--no-update",
+    "--dump-single-json",
+    "--flat-playlist",
+    "--skip-download",
+    `ytsearch1:${songName}`,
+  ];
+
+  const { code, stdout, stderr } = await runProcess(YT_DLP_BINARY, args);
+  if (code !== 0) {
+    throw new Error(stderr.trim() || "yt-dlp search failed");
+  }
+
+  const parsed = JSON.parse(stdout);
+  const videoId = parsed.id || parsed.entries?.[0]?.id;
+
+  if (!validateYouTubeVideoId(videoId)) {
+    throw new Error("yt-dlp search did not return a valid video ID");
+  }
+
+  return videoId;
+}
+
+async function extractStreamUrlsWithYtDlp(videoId, cookieFilePath) {
+  const args = [
+    "--no-update",
+    "--no-playlist",
+    "--cookies",
+    cookieFilePath,
+    "--extractor-args",
+    "youtube:player_client=default",
+    "-f",
+    "bestaudio[ext=webm]/bestaudio/best",
+    "-g",
+    `https://www.youtube.com/watch?v=${videoId}`,
+  ];
+
+  const { code, stdout, stderr } = await runProcess(YT_DLP_BINARY, args);
+
+  if (code !== 0) {
+    const error = new Error(stderr.trim() || "yt-dlp extraction failed");
+    error.stderr = stderr;
+    throw error;
+  }
+
+  const [firstLine, secondLine] = stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const videoUrl = secondLine ? firstLine : null;
+  const audioUrl = secondLine || firstLine || null;
+
+  if (!audioUrl) {
+    throw new Error("yt-dlp did not return a playable audio URL");
+  }
+
+  return {
+    videoUrl,
+    audioUrl,
+    streamUrl: audioUrl,
+    provider: "yt-dlp",
+  };
+}
 
 async function handleSongSearch(req, res, songNameParam) {
-try {
+  try {
     const APIKEY = req.apiKey;
     if (!APIKEY) return res.status(401).json({ error: "API key missing" });
 
     const user = await User.findOne({ where: { apiKey: APIKEY } });
     if (!user) return res.status(403).json({ error: "Invalid API key" });
 
-
     const songName = songNameParam || req.query.song || req.body.songName;
     if (!songName) return res.status(400).json({ error: "Invalid song name" });
 
-  
-    const videoId = await searchVideoIdPlaywright(songName);
+    let videoId;
 
-
+    try {
+      videoId = await searchVideoIdPlaywright(songName);
+    } catch (playwrightError) {
+      console.warn("Playwright search failed, falling back to yt-dlp search:", playwrightError.message);
+      videoId = await searchVideoIdWithYtDlp(songName);
+    }
 
     return res.status(200).json({
       title: songName,
@@ -37,35 +135,66 @@ try {
 
 
 async function handleSongStream(req, res, songUrlParam) {
-  const id = songUrlParam || req.query.songUrl;
+  const id = (songUrlParam || req.query.songUrl || "").trim();
   const APIKEY = req.apiKey;
-    if (!APIKEY) return res.status(401).json({ error: "API key missing" });
+  if (!APIKEY) return res.status(401).json({ error: "API key missing" });
+  if (!validateYouTubeVideoId(id)) {
+    return res.status(400).json({ error: "Invalid YouTube video ID" });
+  }
 
-    const user = await User.findOne({ where: { apiKey: APIKEY } });
-    if (!user) return res.status(403).json({ error: "Invalid API key" });
+  const user = await User.findOne({ where: { apiKey: APIKEY } });
+  if (!user) return res.status(403).json({ error: "Invalid API key" });
 
-    const cookieBase64 = user.cookieFile;
-    if (!cookieBase64) return res.status(400).json({ error: "No cookie found for this user" });
+  const storedCookie = user.cookieFile;
+  if (!storedCookie) return res.status(400).json({ error: "No cookie found for this user" });
 
-    const buffer = Buffer.from(cookieBase64, "base64");
+  let cookieText;
+  try {
+    cookieText = decodeCookieTextFromStorage(storedCookie);
+  } catch (cookieError) {
+    return res.status(400).json({
+      error: "Stored cookie is invalid",
+      details: cookieError.message,
+    });
+  }
 
-    const cookiesDir = path.join(__dirname, "../../UserCookies");
-    if (!fs.existsSync(cookiesDir)) {
-      fs.mkdirSync(cookiesDir, { recursive: true });
-    }
+  const cookiesDir = path.join(__dirname, "../../UserCookies");
+  if (!fs.existsSync(cookiesDir)) {
+    fs.mkdirSync(cookiesDir, { recursive: true });
+  }
 
   const tempCookiePath = path.join(cookiesDir, `temp_cookie_${Date.now()}.txt`);
-  await fs.promises.writeFile(tempCookiePath, buffer);
-  // const url = `https://www.youtube.com/watch?v=${id}`;
+  await fs.promises.writeFile(tempCookiePath, cookieText, "utf8");
 
-  exec(`yt-dlp --cookies "${tempCookiePath}" -g "https://www.youtube.com/watch?v=${id}"`, (err, stdout) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const ytDlpResult = await extractStreamUrlsWithYtDlp(id, tempCookiePath);
+    return res.json(ytDlpResult);
+  } catch (ytDlpError) {
+    console.error("yt-dlp stream extraction failed:", ytDlpError.message);
 
-    const [videoUrl, audioUrl] = stdout.trim().split("\n");
-
-    res.json({ videoUrl, audioUrl });
-  });
+    try {
+      const audioUrl = await extractYouTubeAudioURL(id, tempCookiePath);
+      return res.json({
+        videoUrl: null,
+        audioUrl,
+        streamUrl: audioUrl,
+        provider: "playwright",
+      });
+    } catch (fallbackError) {
+      console.error("Playwright stream fallback failed:", fallbackError.message);
+      return res.status(500).json({
+        error: "Failed to fetch song stream",
+        details: fallbackError.message,
+        ytDlp: ytDlpError.stderr || ytDlpError.message,
+      });
+    }
+  } finally {
+    try {
+      await fs.promises.unlink(tempCookiePath);
+    } catch (cleanupError) {
+      console.error("Failed to remove temp cookie file:", cleanupError.message);
+    }
+  }
 }
 
 module.exports = { handleSongSearch, handleSongStream };
-

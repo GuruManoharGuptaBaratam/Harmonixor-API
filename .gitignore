@@ -1,0 +1,22 @@
+# Environment variables and secrets
+Backend/.env
+Backend/.env.*
+Frontend/vite-project/.env
+Frontend/vite-project/.env.*
+
+# Dependencies
+Backend/node_modules/
+Frontend/vite-project/node_modules/
+
+# Generated runtime files
+Backend/UserCookies/
+
+# Build output
+Backend/dist/
+Backend/build/
+Frontend/vite-project/dist/
+Frontend/vite-project/build/
+
+# Logs and local system files
+*.log
+.DS_Store
