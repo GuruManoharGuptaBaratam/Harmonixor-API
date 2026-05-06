@@ -9,6 +9,7 @@ export default function Player() {
   const [results, setResults] = useState([]);
 
   const [audioUrl, setAudioUrl] = useState("");
+  const [audioMimeType, setAudioMimeType] = useState("");
 
 
   const audioRef = useRef(null);
@@ -34,6 +35,8 @@ export default function Player() {
     setIsButtonLoading(true);
     setSearchError(false);
     setStreamError(false);
+    setAudioUrl("");
+    setAudioMimeType("");
 
     try {
 
@@ -97,6 +100,7 @@ export default function Player() {
       }
 
       setAudioUrl(resolvedAudioUrl);
+      setAudioMimeType(streamData?.mimeType || "");
       setLoadingState("Audio is loading...");
 
     } catch (err) {
@@ -133,6 +137,7 @@ export default function Player() {
     };
 
     audioElement.pause();
+    audioElement.src = audioUrl;
     audioElement.load();
     audioElement.addEventListener("canplay", handleCanPlay, { once: true });
     audioElement.addEventListener("error", handleError, { once: true });
@@ -256,9 +261,12 @@ const fetchPage = async (page) => {
             <audio
               ref={audioRef}
               src={audioUrl}
+              crossOrigin="anonymous"
               style={{ marginTop: "20px", width: "100%" }}
               controls
-            />
+            >
+              {audioMimeType && <source src={audioUrl} type={audioMimeType} />}
+            </audio>
           )}
         </div>
 

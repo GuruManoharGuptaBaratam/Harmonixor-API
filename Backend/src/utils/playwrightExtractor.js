@@ -88,7 +88,10 @@ async function extractYouTubeAudioURL(videoId, cookieFilePath) {
     const formats = playerResponse.streamingData?.adaptiveFormats;
     if (!formats) throw new Error("Formats missing");
 
-    const audio = formats.find((format) => format.mimeType?.startsWith("audio"));
+    const audio =
+      formats.find((format) => format.mimeType?.includes('audio/mp4')) ||
+      formats.find((format) => format.mimeType?.includes('audio/webm')) ||
+      formats.find((format) => format.mimeType?.startsWith("audio"));
     if (!audio?.url) throw new Error("No audio URL found");
 
     return audio.url;
