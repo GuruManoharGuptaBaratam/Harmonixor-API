@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/harmonixor/users": {
-        target: "https://harmonixor-api-1.onrender.com", // 👈 your backend
+        target: "https://harmonixor-api-r.onrender.com",
         changeOrigin: true,
         secure: false,
       },
