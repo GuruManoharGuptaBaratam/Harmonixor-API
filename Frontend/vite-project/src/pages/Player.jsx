@@ -2,12 +2,6 @@ import React, { useState, useRef , useEffect} from "react";
 import "./Player.css";
 
 export default function Player() {
-  const TRUSTED_AUDIO_TYPES = new Set([
-    "audio/mp4",
-    "audio/webm",
-    "application/vnd.apple.mpegurl",
-  ]);
-
   const [songQuery, setSongQuery] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,7 +9,6 @@ export default function Player() {
   const [results, setResults] = useState([]);
 
   const [audioUrl, setAudioUrl] = useState("");
-  const [audioMimeType, setAudioMimeType] = useState("");
 
 
   const audioRef = useRef(null);
@@ -27,6 +20,7 @@ export default function Player() {
   const [searchError, setSearchError] = useState(false);
   const [streamError, setStreamError] = useState(false);
   const [filteredResults, setFilteredResults] = useState([]);
+  const [anticipatingPageAction, setAnticipatingPageAction] = useState("");
 
 
   const handleSongSearch = async () => {
@@ -41,8 +35,6 @@ export default function Player() {
     setIsButtonLoading(true);
     setSearchError(false);
     setStreamError(false);
-    setAudioUrl("");
-    setAudioMimeType("");
 
     try {
 
@@ -94,10 +86,7 @@ export default function Player() {
       const streamData = await streamRes.json();
 
 
-      const resolvedAudioUrl =
-        streamData?.audioUrl || streamData?.streamUrl || streamData?.videoUrl;
-
-      if (!resolvedAudioUrl) {
+      if (!streamData || !streamData.videoUrl) {
 
         setStreamError(true);
         setLoadingState("Failed to load song");
@@ -105,10 +94,23 @@ export default function Player() {
         return;
       }
 
-      setAudioUrl(resolvedAudioUrl);
-      const nextMimeType = streamData?.mimeType || "";
-      setAudioMimeType(TRUSTED_AUDIO_TYPES.has(nextMimeType) ? nextMimeType : "");
+      setAudioUrl(streamData.videoUrl);
+
+
       setLoadingState("Audio is loading...");
+
+      setTimeout(() => {
+        if (audioRef.current) {
+
+          audioRef.current.play();
+
+
+          setLoadingState("Song is playing ");
+          setIsButtonLoading(false);
+        } else {
+          console.log("⚠ audioRef.current is null");
+        }
+      }, 400);
 
     } catch (err) {
       console.error(err);
@@ -117,43 +119,6 @@ export default function Player() {
       setSearchError(true);
     }
   };
-
-  useEffect(() => {
-    if (!audioUrl || !audioRef.current) return;
-
-    const audioElement = audioRef.current;
-
-    const handleCanPlay = async () => {
-      try {
-        await audioElement.play();
-        setLoadingState("Song is playing ");
-      } catch (err) {
-        console.error("Audio playback failed:", err);
-        setStreamError(true);
-        setLoadingState("Failed to play audio stream");
-      } finally {
-        setIsButtonLoading(false);
-      }
-    };
-
-    const handleError = () => {
-      console.error("Audio element failed to load:", audioElement.error);
-      setStreamError(true);
-      setLoadingState("Unsupported or invalid audio stream");
-      setIsButtonLoading(false);
-    };
-
-    audioElement.pause();
-    audioElement.src = audioUrl;
-    audioElement.load();
-    audioElement.addEventListener("canplay", handleCanPlay, { once: true });
-    audioElement.addEventListener("error", handleError, { once: true });
-
-    return () => {
-      audioElement.removeEventListener("canplay", handleCanPlay);
-      audioElement.removeEventListener("error", handleError);
-    };
-  }, [audioUrl]);
 
 
 
@@ -176,14 +141,24 @@ const fetchPage = async (page) => {
 
 
   const handleNext = () => {
-    if (currentPage < 4) {
+    if (currentPage >= 4 || anticipatingPageAction) return;
+
+    setAnticipatingPageAction("next");
+
+    window.setTimeout(() => {
       fetchPage(currentPage + 1);
-    }
+      setAnticipatingPageAction("");
+    }, 120);
   };
   const handlePrev = () => {
-    if (currentPage > 1) {
+    if (currentPage <= 1 || anticipatingPageAction) return;
+
+    setAnticipatingPageAction("prev");
+
+    window.setTimeout(() => {
       fetchPage(currentPage - 1);
-    }
+      setAnticipatingPageAction("");
+    }, 120);
   };
 
   const handleSearchFilter = (value) => {
@@ -203,145 +178,166 @@ const fetchPage = async (page) => {
 
   
 };
+  const languageDistribution = {
+    Telugu: 0,
+    Tamil: 0,
+    Hindi: 0
+  };
+
+  filteredResults.forEach((song) => {
+    const langRaw = song.language || song.genre || "Hindi";
+    const lang = langRaw.charAt(0).toUpperCase() + langRaw.slice(1).toLowerCase();
+    
+    if (languageDistribution[lang] !== undefined) {
+      languageDistribution[lang] += 1;
+    } else {
+      languageDistribution[lang] = 1;
+    }
+  });
+
+  const maxLangCount = Math.max(...Object.values(languageDistribution), 1);
+
   return (
     <div className="player-container">
-      <div className="player-wrapper">
+      <div className="player-wrapper-vertical">
 
-        <div className="player-box">
-          <h2 className="player-title">Music Player</h2>
-
-          <div className="api-row">
+        {/* TOP CARD: Search */}
+        <div className="ref-card top-card">
+          <h1 className="ref-title">Search Songs</h1>
+          <p className="ref-subtitle">Search any track and start listening instantly.</p>
+          
+          <div className="ref-search-pill">
+            <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input
               type="text"
               placeholder="Song name..."
-              className="player-input api-half"
+              className="ref-input-pill"
               value={songQuery}
               onChange={(e) => setSongQuery(e.target.value)}
             />
+            <div className="divider"></div>
             <input
               type="text"
               placeholder="API Key..."
-              className="player-input api-half"
+              className="ref-input-pill"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
-          </div>
-
-          <button
-            className={`player-button ${isButtonLoading ? "loading" : ""}`}
-            onClick={handleSongSearch}
-            disabled={isButtonLoading}
-          >
-            <span>{isButtonLoading ? "Loading..." : "Search & Play"}</span>
-          </button>
-
-          <div className="loading-msg">{loadingState}</div>
-
-          {searchError && <div className="error-msg">Failed to fetch Music ID</div>}
-          {streamError && <div className="error-msg">Failed to fetch Audio Stream</div>}
-
-          <div className="cover-box">
-            <div className="cover-image-area">
-              <svg
-                className="cover-svg"
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-              >
-                <rect x="3" y="7" width="2" height="10" rx="0.3" fill="#fff" opacity="0.95" />
-                <rect x="8" y="5" width="2" height="14" rx="0.3" fill="#fff" opacity="0.95" />
-                <rect x="13" y="9" width="2" height="6" rx="0.3" fill="#fff" opacity="0.95" />
-                <rect x="18" y="3" width="2" height="18" rx="0.3" fill="#fff" opacity="0.95" />
-              </svg>
-
-              {!audioUrl && <div className="no-song-text">No song is playing</div>}
-              {audioUrl && <div className="no-song-text">Song Loaded</div>}
-            </div>
-          </div>
-
-          <div className="song-name-box">
-            <h3 className="song-name">{audioUrl ? `{${songQuery}}` : "{Song Name Will Appear Here}"}</h3>
-          </div>
-
-
-          {audioUrl && (
-            <audio
-              ref={audioRef}
-              src={audioUrl}
-              crossOrigin="anonymous"
-              style={{ marginTop: "20px", width: "100%" }}
-              controls
+            <button
+              className={`ref-btn-pill ${isButtonLoading ? "loading" : ""}`}
+              onClick={handleSongSearch}
+              disabled={isButtonLoading}
             >
-              {audioMimeType && <source src={audioUrl} type={audioMimeType} />}
-            </audio>
-          )}
+              {isButtonLoading ? "Loading..." : "Get Started"}
+            </button>
+          </div>
+          
+          <div className="status-messages">
+            <div className="loading-msg">{loadingState}</div>
+            {searchError && <div className="error-msg">Failed to fetch Music ID</div>}
+            {streamError && <div className="error-msg">Failed to fetch Audio Stream</div>}
+          </div>
         </div>
 
-        <div className="player-box">
-          <h2 className="player-title">Test Bench</h2>
+        {/* MIDDLE CARD: Filters & Pagination */}
+        <div className="ref-card middle-card">
+          <div className="filters-left">
+             <button className="ref-tag" onClick={handlePrev} disabled={currentPage === 1 || Boolean(anticipatingPageAction)}>Previous</button>
+             <button className="ref-tag" onClick={handleNext} disabled={Boolean(anticipatingPageAction)}>Next</button>
+          </div>
+          <div className="filters-right">
+             <input
+                type="text"
+                placeholder="Title..."
+                className="ref-input-dropdown"
+                value={searchQuery}
+                onChange={(e) => handleSearchFilter(e.target.value)}
+              />
+              <span className="results-count">{filteredResults.length} results</span>
+          </div>
+        </div>
 
-          <input
-            type="text"
-            placeholder="Search demo music..."
-            className="player-input"
-            value={searchQuery}
-            onChange={(e) => handleSearchFilter(e.target.value)}
-          />
+        {/* BOTTOM CARD: Content & Player */}
+        <div className="ref-card bottom-card">
+          <div className="bottom-card-content-split">
+            
+            <div className="bottom-left-panel">
+              <h3 className="ref-section-title">Demo Songs</h3>
+              <div className={`ref-results-list ${anticipatingPageAction ? `page-anticipating-${anticipatingPageAction}` : ""}`}>
+                {filteredResults.length === 0 ? (
+                  <p className="no-results">No results found</p>
+                ) : (
+                  filteredResults.map((item, index) => (
+                    <div key={index} className="ref-song-item">
+                      <div className="song-info-stack">
+                         <span className="song-title">{item.title}</span>
+                         <span className="song-artist">{item.artist}</span>
+                      </div>
+                      <div className="song-play-icon">
+                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
-          <div className="pagination-box">
-            <button
-              className="player-button small"
-              onClick={handlePrev}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <button className="player-button small" onClick={handleNext}>
-              Next
-            </button>
+            <div className="bottom-right-panel">
+              <div className="distribution-header">
+                <h3 className="ref-section-title">Song Distribution</h3>
+                <span className="distribution-subtitle">by language</span>
+              </div>
+              <div className="distribution-list">
+                {Object.entries(languageDistribution).map(([lang, count], index) => (
+                   <div key={index} className="dist-row">
+                      <span className="dist-label">{lang}</span>
+                      <div className="dist-bar-wrapper">
+                         <div className="dist-bar-fill" style={{ width: `${(count / maxLangCount) * 100}%` }}></div>
+                      </div>
+                      <span className="dist-count">{count}</span>
+                   </div>
+                ))}
+              </div>
+            </div>
+
           </div>
 
-          <div className="results-display">
-           
-          {filteredResults.length === 0 ? (
-            <p className="no-results">No results found</p>
-          ) : (
-            filteredResults.map((item, index) => (
-              <div key={index} className="song-vertical-card">
-
-                <div className="accent-strip"></div>
-
-                <div className="song-thumbnail">
+          {/* Player Bottom Bar */}
+          <div className="ref-player-bar">
+             <div className="player-left">
+                <div className={`player-icon ${audioUrl ? 'is-playing' : ''}`}>
                   <svg
-                    className="thumb-svg"
-                    width="28"
-                    height="28"
+                    className="cover-svg"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
                   >
-                    <path d="M3 12h2"></path>
-                    <path d="M7 10h2"></path>
-                    <path d="M11 14h2"></path>
-                    <path d="M15 8h2"></path>
-                    <path d="M19 12h2"></path>
+                    <rect x="5" y="7" width="3" height="10" rx="1" fill="#000" />
+                    <rect x="10.5" y="4" width="3" height="16" rx="1" fill="#000" />
+                    <rect x="16" y="8" width="3" height="8" rx="1" fill="#000" />
                   </svg>
                 </div>
-
-                <div className="song-info">
-                  <div className="song-title">{item.title}</div>
-                  <div className="song-artist">{item.artist}</div>
+                <div className="player-info">
+                   <h4 className="player-now-playing">Now Playing</h4>
+                   <p className="player-song-status">{audioUrl ? songQuery || "Song Loaded" : "Select a song to start"}</p>
                 </div>
-
-              </div>
-            ))
-          )}
-
+             </div>
              
-        </div>
-        
+             <div className="player-center-right">
+               {audioUrl ? (
+                <audio
+                  ref={audioRef}
+                  src={audioUrl}
+                  className="native-audio"
+                  controls
+                />
+               ) : (
+                 <div className="audio-placeholder">
+                    <span>No audio loaded</span>
+                 </div>
+               )}
+             </div>
+          </div>
         </div>
 
       </div>
