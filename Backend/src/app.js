@@ -9,6 +9,13 @@ const demoSongsRoute = require("./routes/demoSongs");
 
 
 const app = express();
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://harmonixor-api.vercel.app",
+  "https://harmonixor-api-pcfs.vercel.app",
+  "https://harmonixor-api-r.onrender.com",
+];
 
 function normalizeOrigin(origin) {
   return String(origin || "")
@@ -16,10 +23,15 @@ function normalizeOrigin(origin) {
     .replace(/\/+$/, "");
 }
 
-const allowedOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map(normalizeOrigin)
-  .filter(Boolean);
+const allowedOrigins = Array.from(
+  new Set([
+    ...DEFAULT_ALLOWED_ORIGINS.map(normalizeOrigin),
+    ...(process.env.CORS_ORIGINS || "")
+      .split(",")
+      .map(normalizeOrigin)
+      .filter(Boolean),
+  ])
+);
 
 app.use(cors({
   origin(origin, callback) {
